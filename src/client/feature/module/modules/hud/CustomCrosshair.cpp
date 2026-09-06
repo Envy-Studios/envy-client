@@ -3,6 +3,9 @@
 
 #include <client/Envy.h>
 #include <commdlg.h>
+#include "mc/common/client/renderer/MaterialPtr.h"
+#include "mc/common/client/renderer/MeshUtils.h"
+#include "mc/common/client/renderer/Tessellator.h"
 #include <glm/gtc/matrix_transform.hpp>
 
 namespace {
@@ -122,7 +125,7 @@ void CustomCrosshair::render(DrawUtil& dc, bool isDefault, bool inEditor) {
         }
     }
 
-    float op = std::clamp(std::get<FloatValue>(opacity), 0.05f, 1.f);
+    float op = std::clamp(std::get<FloatValue>(opacity).value, 0.05f, 1.f);
     float cx = boundingBox / 2.f;
     float cy = boundingBox / 2.f;
 
@@ -210,9 +213,9 @@ void CustomCrosshair::drawChevron(DrawUtil& dc, float cx, float cy, float armLen
 }
 
 void CustomCrosshair::drawPreset(DrawUtil& dc, float cx, float cy, d2d::Color const& col, bool inEditor) {
-    float sz = (std::max)(1.f, std::get<FloatValue>(size));
-    float th = (std::max)(1.f, std::get<FloatValue>(thickness));
-    float gp = (std::max)(0.f, std::get<FloatValue>(gap));
+    float sz = (std::max)(1.f, std::get<FloatValue>(size).value);
+    float th = (std::max)(1.f, std::get<FloatValue>(thickness).value);
+    float gp = (std::max)(0.f, std::get<FloatValue>(gap).value);
     bool useOutline = std::get<BoolValue>(outline);
     float outlineWidth = useOutline ? (std::max)(1.f, th * 0.4f) : 0.f;
     d2d::Color outCol = std::get<ColorValue>(outlineColor).getMainColor();
@@ -353,7 +356,7 @@ void CustomCrosshair::drawImageCrosshair(DrawUtil& dc, float cx, float cy, bool 
     if (dc.isMinecraft()) {
         // Arbitrary bitmaps can only be drawn through D2D; fall back to the preset.
         d2d::Color col = std::get<ColorValue>(color).getMainColor();
-        col.a *= std::clamp(std::get<FloatValue>(opacity), 0.05f, 1.f);
+        col.a *= std::clamp(std::get<FloatValue>(opacity).value, 0.05f, 1.f);
         drawPreset(dc, cx, cy, col, inEditor);
         return;
     }
@@ -365,12 +368,12 @@ void CustomCrosshair::drawImageCrosshair(DrawUtil& dc, float cx, float cy, bool 
 
     bool valid = bitmap && path == loadedImage;
     if (valid) {
-        float scale = std::clamp(std::get<FloatValue>(imageScale), 0.1f, 8.f);
+        float scale = std::clamp(std::get<FloatValue>(imageScale).value, 0.1f, 8.f);
         D2D1_SIZE_F size = bitmap->GetSize();
         float w = size.width * scale;
         float h = size.height * scale;
         if (w >= 1.f && h >= 1.f) {
-            float imgOpacity = std::clamp(std::get<FloatValue>(opacity), 0.05f, 1.f);
+            float imgOpacity = std::clamp(std::get<FloatValue>(opacity).value, 0.05f, 1.f);
             static_cast<D2DUtil&>(dc).drawBitmapRotated(
                 bitmap.Get(), { cx - w / 2.f, cy - h / 2.f, cx + w / 2.f, cy + h / 2.f }, 0.f, imgOpacity);
             return;
