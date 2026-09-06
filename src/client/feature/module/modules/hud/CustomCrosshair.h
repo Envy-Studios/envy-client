@@ -1,8 +1,13 @@
 ﻿#pragma once
 #include "../../HUDModule.h"
 
+#include <memory>
 #include <string>
 #include <vector>
+
+namespace SDK {
+    class UIControl;
+}
 
 class CustomCrosshair : public HUDModule {
 public:
@@ -31,6 +36,11 @@ public:
 
     void render(DrawUtil& dc, bool isDefault, bool inEditor) override;
 
+    // The HUD renderer scales modules from their box's top-left corner; this
+    // override scales around the box's center instead, so the crosshair stays
+    // centered on the aim point no matter what scale is set.
+    [[nodiscard]] d2d::Rect getRect() override;
+
 private:
     void drawPreset(DrawUtil& dc, float cx, float cy, d2d::Color const& col, bool inEditor);
     void drawImageCrosshair(DrawUtil& dc, float cx, float cy, bool inEditor);
@@ -42,6 +52,8 @@ private:
                      d2d::Color const& col, d2d::Color const& outlineCol, float outlineWidth);
     void tryLoadImage();
     void browseForImage();
+    void onRenderLayer(Event& ev);
+    void restoreVanillaCrosshair();
 
     EnumData mode;
     EnumData style;
@@ -60,4 +72,7 @@ private:
     std::wstring loadedImage;
     bool imageLoadFailed = false;
     bool initialCentering = false;
+
+    std::shared_ptr<SDK::UIControl> vanillaCrosshair = nullptr;
+    Vec2 vanillaOriginalPos = {};
 };

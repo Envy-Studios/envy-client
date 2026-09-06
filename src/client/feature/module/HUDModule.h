@@ -54,7 +54,7 @@ public:
     void setPos(Vec2 newPos) { rect.setPos(newPos); }
 
     [[nodiscard]] float getScale() { return std::get<FloatValue>(scale); }
-    [[nodiscard]] d2d::Rect getRect();
+    [[nodiscard]] virtual d2d::Rect getRect();
     [[nodiscard]] d2d::Rect getRectNonScaled() { return rect; }
     [[nodiscard]] virtual bool forceMinecraftRenderer() override { return std::get<BoolValue>(forceMCRend); }
     [[nodiscard]] bool isResizable() { return resizable; }

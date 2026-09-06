@@ -2,6 +2,9 @@
 #include "CustomCrosshair.h"
 
 #include <client/Envy.h>
+#include <mc/common/client/gui/ScreenView.h>
+#include <mc/common/client/gui/controls/VisualTree.h>
+#include <mc/common/client/gui/controls/UIControl.h>
 #include <commdlg.h>
 #include "mc/common/client/renderer/MaterialPtr.h"
 #include "mc/common/client/renderer/MeshUtils.h"
@@ -103,9 +106,75 @@ CustomCrosshair::CustomCrosshair()
 
     // Anchor the crosshair at the center of the screen by default.
     std::get<Vec2Value>(storedPos) = { 0.5f, 0.5f };
+
+    // Move the vanilla crosshair out of the way while this module is enabled.
+    // Priority 10 overpowers the HUD renderer, same as the Movable modules.
+    listen<RenderLayerEvent>(static_cast<EventListenerFunc>(&CustomCrosshair::onRenderLayer), true, 10);
 }
 
 CustomCrosshair::~CustomCrosshair() = default;
+
+d2d::Rect CustomCrosshair::getRect() {
+    // Grow/shrink the box equally in every direction around its center. The
+    // renderer transforms local points as Scale(s) * Translation(box topLeft),
+    // so with a centered box the crosshair's local center (boundingBox / 2)
+    // always lands on the same screen point while the shapes scale around it.
+    float grow = (boundingBox / 2.f) * (getScale() - 1.f);
+    return { rect.left - grow, rect.top - grow, rect.left + boundingBox + grow,
+             rect.top + boundingBox + grow };
+}
+
+void CustomCrosshair::onRenderLayer(Event& evGeneric) {
+    auto& ev = reinterpret_cast<RenderLayerEvent&>(evGeneric);
+
+    if (!isEnabled()) {
+        restoreVanillaCrosshair();
+        return;
+    }
+
+    auto* screenView = ev.getScreenView();
+    if (!screenView || !screenView->visualTree || !screenView->visualTree->rootControl) return;
+    auto* root = screenView->visualTree->rootControl;
+    if (root->name != "hud_screen") return;
+
+    // Locate the vanilla crosshair control. The exact name differs between
+    // game versions, so try the known candidates.
+    std::shared_ptr<SDK::UIControl> found;
+    root->getDescendants([&](std::shared_ptr<SDK::UIControl> const& control) {
+        if (found) return;
+        if (control->name == "crosshair" || control->name == "crosshair_renderer" ||
+            control->name == "crosshair_image") {
+            found = control;
+        }
+    });
+
+    if (!found) {
+        vanillaCrosshair = nullptr;
+        return;
+    }
+
+    if (found != vanillaCrosshair) {
+        // A fresh control instance appeared; remember its untouched position.
+        vanillaCrosshair = found;
+        vanillaOriginalPos = found->position;
+    } else if (found->position.x != 9999.f || found->position.y != 9999.f) {
+        // The game re-laid-out the control; refresh the restore point.
+        vanillaOriginalPos = found->position;
+    }
+
+    // Park the vanilla crosshair far off-screen (the same trick the Movable
+    // modules use) and propagate the new position to its children.
+    found->position = { 9999.f, 9999.f };
+    found->getDescendants([](std::shared_ptr<SDK::UIControl> const& control) { control->updatePos(); });
+}
+
+void CustomCrosshair::restoreVanillaCrosshair() {
+    if (!vanillaCrosshair) return;
+
+    vanillaCrosshair->position = vanillaOriginalPos;
+    vanillaCrosshair->getDescendants([](std::shared_ptr<SDK::UIControl> const& control) { control->updatePos(); });
+    vanillaCrosshair = nullptr;
+}
 
 void CustomCrosshair::render(DrawUtil& dc, bool isDefault, bool inEditor) {
     // Keep a fixed-size bounding box; everything is drawn centered inside it.
