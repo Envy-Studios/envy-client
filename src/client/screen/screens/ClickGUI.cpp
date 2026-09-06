@@ -87,6 +87,7 @@ namespace {
 
 ClickGUI::ClickGUI() {
     Latite::get().addTextBox(&this->searchTextBox);
+    this->key = Latite::get().getMenuKey();
 
     Eventing::get().listen<RenderOverlayEvent>(this, (EventListenerFunc)&ClickGUI::onRender, 1, true);
     Eventing::get().listen<RendererCleanupEvent>(this, (EventListenerFunc)&ClickGUI::onCleanup, 1, true);

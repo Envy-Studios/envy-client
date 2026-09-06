@@ -22,8 +22,6 @@
 
 HUDEditor::HUDEditor()
     : dragMod(nullptr) {
-    this->key = Latite::get().getMenuKey();
-
     Eventing::get().listen<RenderOverlayEvent>(this, (EventListenerFunc)&HUDEditor::onRender, 2, true);
     Eventing::get().listen<RenderLayerEvent>(this, (EventListenerFunc)&HUDEditor::onRenderLayer, 1, true);
     Eventing::get().listen<ClickEvent>(this, (EventListenerFunc)&HUDEditor::onClick, 4);

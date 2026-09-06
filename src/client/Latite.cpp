@@ -674,7 +674,7 @@ void Latite::initSettings() {
                                              LocalizeString::get("client.settings.menuKey.desc"));
         set->value = &this->menuKey;
         set->callback = [this](Setting& set) {
-            Latite::getScreenManager().get<HUDEditor>().key = this->getMenuKey();
+            Latite::getScreenManager().get<ClickGUI>().key = this->getMenuKey();
         };
         this->getSettings().addSetting(set);
     }
