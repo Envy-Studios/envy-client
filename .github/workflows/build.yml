@@ -2,6 +2,27 @@ name: Build DLL
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version, e.g. v0.1.0 (bump it every release)'
+        required: true
+        default: 'v0.1.0'
+        type: string
+      notes:
+        description: 'What got added in this release (shown at the top of the release notes)'
+        required: false
+        default: ''
+        type: string
+      prerelease:
+        description: 'Mark the release as a pre-release'
+        required: false
+        default: false
+        type: boolean
+      overwrite:
+        description: 'If this version already exists, update that release instead of failing'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -13,6 +34,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Full history + tags so the release notes can list commits since the last tag
+          fetch-depth: 0
 
       - name: Setup MSVC (x64)
         uses: ilammy/msvc-dev-cmd@v1
@@ -67,9 +91,72 @@ jobs:
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+          NOTES: ${{ inputs.notes }}
+          PRERELEASE: ${{ inputs.prerelease }}
+          OVERWRITE: ${{ inputs.overwrite }}
         run: |
-          $tag = "build-${{ github.run_number }}"
-          gh release create $tag "out/build/x64-release/Envy.dll#Envy.dll" `
-            --title "Envy Client automated build ($tag)" `
-            --notes "Automated MSVC Release build of ``main`` @ ${{ github.sha }}.`n`nDrop **Envy.dll** into your envy-client DLL loader." `
-            --target ${{ github.sha }}
+          $ErrorActionPreference = "Stop"
+
+          # --- normalize the version into a vX.Y.Z tag ---
+          $tag = $env:VERSION.Trim()
+          if (-not $tag.StartsWith("v")) { $tag = "v$tag" }
+          if ($tag -notmatch '^v\d+\.\d+\.\d+(-[\w.\-]+)?$') {
+            throw "Version '$tag' does not look like v1.2.3"
+          }
+          $title = "Envy Client $tag"
+          $dll = "out/build/x64-release/Envy.dll"
+          $sha = "${{ github.sha }}"
+
+          # --- does this release already exist? ---
+          $exists = $false
+          gh release view $tag 2>$null | Out-Null
+          if ($LASTEXITCODE -eq 0) { $exists = $true }
+          if ($exists -and $env:OVERWRITE -ne "true") {
+            throw "Release $tag already exists. Bump the version, or tick 'overwrite' to replace it."
+          }
+
+          # --- assemble release notes ---
+          $lines = [System.Collections.Generic.List[string]]::new()
+
+          $manual = $env:NOTES.Trim()
+          if ($manual) {
+            $lines.Add("## What's new")
+            $lines.Add($manual)
+            $lines.Add("")
+          }
+
+          $prevTag = git describe --tags --abbrev=0 2>$null
+          if ($LASTEXITCODE -ne 0) { $prevTag = $null }
+          if ($prevTag -eq $tag) { $prevTag = $null }
+
+          if ($prevTag) {
+            $lines.Add("### Commits since $prevTag")
+            $lines.Add("")
+            git log --oneline --no-decorate -30 "$prevTag..HEAD" | ForEach-Object { $lines.Add("- $_") }
+          } else {
+            $lines.Add("### Commits")
+            $lines.Add("")
+            git log --oneline --no-decorate -30 HEAD | ForEach-Object { $lines.Add("- $_") }
+          }
+
+          $lines.Add("")
+          $lines.Add("---")
+          $lines.Add("**Build:** MSVC x64 Release @ [$($sha.Substring(0,7))](https://github.com/Envy-Studios/envy-client/commit/$sha)")
+
+          Set-Content -Path notes.md -Value $lines -Encoding utf8
+
+          # --- publish ---
+          if ($exists) {
+            gh release upload $tag $dll --clobber
+            gh release edit $tag --title $title --notes-file notes.md
+            if ($env:PRERELEASE -ne "true") { gh release edit $tag --latest }
+            Write-Host "Updated existing release $tag"
+          } else {
+            if ($env:PRERELEASE -eq "true") {
+              gh release create $tag $dll --title $title --notes-file notes.md --target $sha --prerelease
+            } else {
+              gh release create $tag $dll --title $title --notes-file notes.md --target $sha
+            }
+            Write-Host "Created release $tag"
+          }
