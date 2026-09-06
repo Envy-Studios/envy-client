@@ -166,7 +166,8 @@ public:
                                               LocalizedString const& desc, ValueType& val, ValueType min, ValueType max,
                                               ValueType interval, Setting::Condition condition = Setting::Condition());
     std::shared_ptr<Setting> addActionSetting(std::string const& internalName, LocalizedString const& displayName,
-                                              LocalizedString const& desc, std::function<void()> action);
+                                              LocalizedString const& desc, std::function<void()> action,
+                                              Setting::Condition condition = Setting::Condition());
 
     std::shared_ptr<SettingGroup> settings;
 

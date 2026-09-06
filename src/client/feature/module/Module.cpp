@@ -156,8 +156,9 @@ std::shared_ptr<Setting> Module::addSliderSetting(std::string const& internalNam
 }
 
 std::shared_ptr<Setting> Module::addActionSetting(std::string const& internalName, LocalizedString const& displayName,
-                                                  LocalizedString const& desc, std::function<void()> action) {
-    auto set = std::make_shared<Setting>(internalName, displayName, desc);
+                                                  LocalizedString const& desc, std::function<void()> action,
+                                                  Setting::Condition condition) {
+    auto set = std::make_shared<Setting>(internalName, displayName, desc, condition);
     set->ownedValue = std::make_unique<ValueType>(ActionValue {});
     set->value = set->ownedValue.get();
     set->defaultValue = ActionValue {};
