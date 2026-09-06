@@ -267,7 +267,7 @@ void ClickGUI::onRender(Event&) {
         // Envy Text
         float realLogoHeight = rect.getHeight() * 0.077921f;
         float titleSize = 25.f * adaptedScale;
-        std::wstring titleText = L"\x202AEnvy Client\x202C";
+        std::wstring titleText = L"\x202A" L"Envy Client\x202C";
         float titleGap = 9.f * adaptedScale;
         float titleWidth = 500.f * adaptedScale;
         RectF titleRect = rtl ? RectF { logoRect.left - titleGap - titleWidth, logoRect.top, logoRect.left - titleGap,
@@ -733,9 +733,9 @@ void ClickGUI::onRender(Event&) {
                                 mod.mod->settings->forEach([&](std::shared_ptr<Setting> set) {
                                     *set->value = set->defaultValue;
                                     // std::visit([set](auto& obj) {
-                                    //	static_assert(false, "");
-                                    //	obj = std::get<std::remove_reference_t<decltype(obj)>>(set->defaultValue);
-                                    //	}, *set->value);
+                                    //  static_assert(false, "");
+                                    //  obj = std::get<std::remove_reference_t<decltype(obj)>>(set->defaultValue);
+                                    //  }, *set->value);
                                     // });
                                 });
                             }
