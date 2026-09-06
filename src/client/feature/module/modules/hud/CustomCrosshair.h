@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "../HUDModule.h"
+#include "../../HUDModule.h"
 
 #include <string>
 #include <vector>
