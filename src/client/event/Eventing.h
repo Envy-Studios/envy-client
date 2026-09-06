@@ -111,7 +111,7 @@ public:
         state->listener = nullptr;
     }
 
-    // Substitute for Latite::getEventing
+    // Substitute for Envy::getEventing
     [[nodiscard]] static Eventing& get();
 
 private:

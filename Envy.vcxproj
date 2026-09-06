@@ -54,7 +54,7 @@
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{5b4bae65-3d2d-4e71-854e-53438e690dad}</ProjectGuid>
-    <RootNamespace>LatiteRewrite</RootNamespace>
+    <RootNamespace>Envy</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -169,7 +169,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <LatiteBuildTimestamp>0000-00-00_00-00-00Z</LatiteBuildTimestamp>
+    <EnvyBuildTimestamp>0000-00-00_00-00-00Z</EnvyBuildTimestamp>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(ProjectDir);$(ProjectDir)src;$(ProjectDir)deps\include;$(IncludePath)</IncludePath>
@@ -272,14 +272,14 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>LATITE_BUILD_TIMESTAMP=\"$(LatiteBuildTimestamp)\";LATITE_DEBUG;LATITE_CRASH_REPORTING;_NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ENVY_BUILD_TIMESTAMP=\"$(EnvyBuildTimestamp)\";ENVY_DEBUG;ENVY_CRASH_REPORTING;_NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>$(ProjectDir)out\debug\$(TargetName).pch</PrecompiledHeaderOutputFile>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <ModuleOutputFile>Latite</ModuleOutputFile>
+      <ModuleOutputFile>Envy</ModuleOutputFile>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <Optimization>Disabled</Optimization>
@@ -304,7 +304,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>LATITE_BUILD_TIMESTAMP=\"$(LatiteBuildTimestamp)\";LATITE_PUBLIC;LATITE_CRASH_REPORTING;_HAS_STATIC_RTTI=0;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ENVY_BUILD_TIMESTAMP=\"$(EnvyBuildTimestamp)\";ENVY_PUBLIC;ENVY_CRASH_REPORTING;_HAS_STATIC_RTTI=0;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -335,7 +335,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>LATITE_BUILD_TIMESTAMP=\"$(LatiteBuildTimestamp)\";LATITE_NIGHTLY;LATITE_CRASH_REPORTING;LATITE_PUBLIC;_HAS_STATIC_RTTI=0;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ENVY_BUILD_TIMESTAMP=\"$(EnvyBuildTimestamp)\";ENVY_NIGHTLY;ENVY_CRASH_REPORTING;ENVY_PUBLIC;_HAS_STATIC_RTTI=0;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -367,7 +367,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>LATITE_BUILD_TIMESTAMP=\"$(LatiteBuildTimestamp)\";LATITE_BETA;LATITE_CRASH_REPORTING;_HAS_STATIC_RTTI=0;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ENVY_BUILD_TIMESTAMP=\"$(EnvyBuildTimestamp)\";ENVY_BETA;ENVY_CRASH_REPORTING;_HAS_STATIC_RTTI=0;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -398,7 +398,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>LATITE_BUILD_TIMESTAMP=\"$(LatiteBuildTimestamp)\";NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ENVY_BUILD_TIMESTAMP=\"$(EnvyBuildTimestamp)\";NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
@@ -440,7 +440,7 @@
     <ClInclude Include="src\client\event\impl\ClientTextEvent.h" />
     <ClInclude Include="src\client\event\impl\FogColorEvent.h" />
     <ClInclude Include="src\client\event\impl\GetTimeEvent.h" />
-    <ClInclude Include="src\client\event\impl\LatiteClientMessageEvent.h" />
+    <ClInclude Include="src\client\event\impl\EnvyClientMessageEvent.h" />
     <ClInclude Include="src\client\event\impl\OutlineSelectionEvent.h" />
     <ClInclude Include="src\client\event\impl\PacketReceiveEvent.h" />
     <ClInclude Include="src\client\event\impl\SendPacketEvent.h" />
@@ -580,7 +580,7 @@
     <ClInclude Include="src\client\hook\impl\RenderControllerHooks.h" />
     <ClInclude Include="src\client\hook\impl\ScreenViewHooks.h" />
     <ClInclude Include="src\client\input\Keyboard.h" />
-    <ClInclude Include="src\client\Latite.h" />
+    <ClInclude Include="src\client\Envy.h" />
     <ClInclude Include="src\client\localization\LocalizeData.h" />
     <ClInclude Include="src\client\localization\LocalizeString.h" />
     <ClInclude Include="src\client\misc\ClientMessageQueue.h" />
@@ -856,7 +856,7 @@
     <ClCompile Include="src\client\hook\impl\RenderControllerHooks.cpp" />
     <ClCompile Include="src\client\hook\impl\ScreenViewHooks.cpp" />
     <ClCompile Include="src\client\input\Keyboard.cpp" />
-    <ClCompile Include="src\client\Latite.cpp" />
+    <ClCompile Include="src\client\Envy.cpp" />
     <ClCompile Include="src\client\localization\LocalizeData.cpp" />
     <ClCompile Include="src\client\localization\LocalizeString.cpp" />
     <ClCompile Include="src\client\misc\ClientMessageQueue.cpp" />
@@ -968,10 +968,10 @@
     <None Include="assets\lang\ru_RU.json" />
     <None Include="CMakePresets.json" />
     <None Include="CppProperties.json" />
-    <None Include="src\client\script\js\latiteapi.js" />
+    <None Include="src\client\script\js\envyapi.js" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="LatiteRewrite.rc" />
+    <ResourceCompile Include="Envy.rc" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="assets\arrow.png" />

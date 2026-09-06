@@ -6,7 +6,7 @@
 
 bool Module::shouldListenToEvent(uint32_t eventHash) {
     const bool isRenderEvent = eventHash == RenderLayerEvent::hash || eventHash == RenderOverlayEvent::hash;
-    return !isRenderEvent || shouldRenderWithTabList() || !Latite::getModuleManager().shouldHideModulesForTabList();
+    return !isRenderEvent || shouldRenderWithTabList() || !Envy::getModuleManager().shouldHideModulesForTabList();
 }
 
 void Module::loadConfig(SettingGroup& resolvedGroup) {

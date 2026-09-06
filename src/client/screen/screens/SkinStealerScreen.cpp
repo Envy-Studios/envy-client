@@ -6,7 +6,7 @@
 #include "client/event/events/KeyUpdateEvent.h"
 #include "client/event/events/RendererCleanupEvent.h"
 #include "client/event/events/RenderOverlayEvent.h"
-#include "client/Latite.h"
+#include "client/Envy.h"
 #include "client/localization/LocalizeString.h"
 #include "client/render/asset/Assets.h"
 #include "mc/common/world/actor/player/PlayerListEntry.h"
@@ -173,7 +173,7 @@ SkinStealerScreen::HeadBitmap* SkinStealerScreen::getHeadBitmap(SDK::PlayerListE
 
     HeadBitmap cached {};
     cached.skinKey = skinKey;
-    ID2D1DeviceContext* dc = Latite::getRenderer().getDeviceContext();
+    ID2D1DeviceContext* dc = Envy::getRenderer().getDeviceContext();
     if (!dc ||
         FAILED(dc->CreateBitmap(
             D2D1::SizeU(static_cast<UINT32>(playerHeadTextureSize), static_cast<UINT32>(playerHeadTextureSize)),
@@ -223,7 +223,7 @@ std::vector<uint8_t> SkinStealerScreen::makePlayerHeadRgba(SDK::SkinImage const&
 
 std::filesystem::path SkinStealerScreen::makeSkinOutputPath(std::string const& playerName,
                                                             SDK::SkinImage const& image) const {
-    std::filesystem::path directory = util::GetLatitePath() / "SkinStealer";
+    std::filesystem::path directory = util::GetEnvyPath() / "SkinStealer";
     std::string baseName = sanitizeFileName(playerName);
     if (baseName.empty()) baseName = "player";
 
@@ -252,7 +252,7 @@ bool SkinStealerScreen::writeRgbaPng(std::filesystem::path const& path, SDK::Ski
     std::filesystem::create_directories(path.parent_path(), ec);
     if (ec) return false;
 
-    IWICImagingFactory2* factory = Latite::getRenderer().getImagingFactory();
+    IWICImagingFactory2* factory = Envy::getRenderer().getImagingFactory();
     if (!factory) return false;
 
     uint32_t width = image.width;
@@ -360,7 +360,7 @@ uint64_t SkinStealerScreen::hashSkin(SDK::SkinImage const& image, std::string co
 }
 
 void SkinStealerScreen::openSkinStealerFolder() {
-    std::filesystem::path directory = util::GetLatitePath() / "SkinStealer";
+    std::filesystem::path directory = util::GetEnvyPath() / "SkinStealer";
 
     std::error_code ec;
     std::filesystem::create_directories(directory, ec);
@@ -392,14 +392,14 @@ void SkinStealerScreen::onRender(Event&) {
     if (rowsDirty || getPlayerListSignature() != playerListSignature) rebuildRows();
 
     D2DUtil dc;
-    D2D1_SIZE_F screenSize = Latite::getRenderer().getScreenSize();
+    D2D1_SIZE_F screenSize = Envy::getRenderer().getScreenSize();
     Vec2 cursorPos = SDK::ClientInstance::get()->cursorPos;
-    d2d::Color accent = d2d::Color(Latite::get().getAccentColor().getMainColor());
+    d2d::Color accent = d2d::Color(Envy::get().getAccentColor().getMainColor());
 
     updateScrollbarDrag(cursorPos);
 
-    if (Latite::get().getMenuBlur()) {
-        dc.drawGaussianBlur(Latite::get().getMenuBlur().value());
+    if (Envy::get().getMenuBlur()) {
+        dc.drawGaussianBlur(Envy::get().getMenuBlur().value());
     }
 
     float scale = std::clamp(screenSize.width / 1920.f, 0.7f, 1.1f);
@@ -450,7 +450,7 @@ void SkinStealerScreen::onRender(Event&) {
                 Renderer::FontSelection::PrimaryRegular, 15.f * scale, DWRITE_TEXT_ALIGNMENT_CENTER,
                 DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
 
-    if (ID2D1Bitmap* closeIcon = Latite::getAssets().xIcon.getBitmap()) {
+    if (ID2D1Bitmap* closeIcon = Envy::getAssets().xIcon.getBitmap()) {
         dc.ctx->DrawBitmap(closeIcon, closeButtonRect, closeButtonRect.contains(cursorPos) ? 1.f : 0.72f);
     }
 
@@ -460,7 +460,7 @@ void SkinStealerScreen::onRender(Event&) {
     float contentHeight = rows.empty() ? 0.f : static_cast<float>(rows.size()) * (rowHeight + gap) - gap;
     scrollMax = std::max(0.f, contentHeight - listRect.getHeight());
     scroll = std::clamp(scroll, 0.f, scrollMax);
-    lerpScroll = std::lerp(lerpScroll, scroll, Latite::getRenderer().getDeltaTime() * 0.25f);
+    lerpScroll = std::lerp(lerpScroll, scroll, Envy::getRenderer().getDeltaTime() * 0.25f);
     if (std::abs(lerpScroll - scroll) < 0.1f) lerpScroll = scroll;
 
     if (rows.empty()) {

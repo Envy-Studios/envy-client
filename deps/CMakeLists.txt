@@ -41,16 +41,16 @@ CPMAddPackage(
     DOWNLOAD_ONLY YES
 )
 
-target_include_directories(Latite PRIVATE
+target_include_directories(Envy PRIVATE
 	"include"
     "${MicrosoftGameInput_SOURCE_DIR}/native/include"
 )
 
-target_sources(Latite PRIVATE
+target_sources(Envy PRIVATE
     "${MicrosoftGameInput_SOURCE_DIR}/native/src/GameInput.cpp"
 )
 
-target_link_libraries(Latite PRIVATE
+target_link_libraries(Envy PRIVATE
 	minhook
 	glm::glm
 	mnemosyne

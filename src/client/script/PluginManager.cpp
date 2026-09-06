@@ -1,7 +1,7 @@
 #include "pch.h"
 // brace yourselves
 #include "PluginManager.h"
-#include "client/Latite.h"
+#include "client/Envy.h"
 #include "client/misc/ClientMessageQueue.h"
 #include "client/event/Eventing.h"
 #include "client/event/events/UpdateEvent.h"
@@ -30,7 +30,7 @@ PluginManager::PluginManager() {
 }
 
 std::filesystem::path PluginManager::getPluginsDir() {
-    return util::GetLatitePath() / "Plugins";
+    return util::GetEnvyPath() / "Plugins";
 }
 
 std::filesystem::path PluginManager::getPrerunPluginsDir() {
@@ -44,7 +44,7 @@ std::shared_ptr<JsPlugin> PluginManager::loadPlugin(std::wstring const& folderPa
 
     for (auto& scr : this->items | std::views::values) {
         if (std::filesystem::absolute(scr->getPath()) == std::filesystem::absolute(scriptPath)) {
-            Latite::getClientMessageQueue().push(
+            Envy::getClientMessageQueue().push(
                 util::Format(std::format("Plugin {} is already loaded.", util::WStrToStr(scr->getName()))));
             return nullptr;
         }
@@ -112,7 +112,7 @@ void PluginManager::reportError(JsValueRef except, std::wstring filePath) {
     std::stringstream ss;
     ss << "&c" << util::WStrToStr(stack);
 
-    Latite::getClientMessageQueue().display(util::Format(ss.str()));
+    Envy::getClientMessageQueue().display(util::Format(ss.str()));
     Logger::Info("(plugin/{}) ({}) {}", util::WStrToStr(JsScript::getThis()->getPlugin()->getName()),
                  JsScript::getThis()->getRelativePath().string(), util::WStrToStr(stack));
 
@@ -130,7 +130,7 @@ void PluginManager::handleErrors(JsErrorCode code) {
             JS::JsGetAndClearException(&except);
             reportError(except, script->data.name);
         } else if (code != JsNoError) {
-            Latite::getClientMessageQueue().display(
+            Envy::getClientMessageQueue().display(
                 util::Format(std::format("&cA JS error occurred in script {}: JsErrorCode 0x{:X}",
                                          util::WStrToStr(script->data.name), (int)code)));
             Logger::Info("(plugin/{}) ({}) Js ErrorCode: 0x{:X}", util::WStrToStr(script->getPlugin()->getName()),
@@ -214,7 +214,7 @@ void PluginManager::runScriptingOperations() {
 }
 
 std::expected<void, std::string> PluginManager::installScript(std::string const& inName) {
-    std::wstring registry = L"https://raw.githubusercontent.com/LatiteScripting/Scripts/master/Plugins";
+    std::wstring registry = L"https://raw.githubusercontent.com/LatiteScripting/Scripts/master/Plugins";
     std::wstring jsonPath = registry + L"/plugins.json";
     nlohmann::json scriptsJson;
 
@@ -292,7 +292,7 @@ std::expected<void, std::string> PluginManager::installScript(std::string const&
 std::vector<PluginManager::PluginInfo> PluginManager::fetchPluginsFromMarket() {
     std::vector<PluginInfo> list = {};
 
-    std::wstring registry = L"https://raw.githubusercontent.com/LatiteScripting/Scripts/master/Plugins";
+    std::wstring registry = L"https://raw.githubusercontent.com/LatiteScripting/Scripts/master/Plugins";
     std::wstring jsonPath = registry + L"/plugins.json";
     nlohmann::json scriptsJson;
 
@@ -319,7 +319,7 @@ std::vector<PluginManager::PluginInfo> PluginManager::fetchPluginsFromMarket() {
                 return list;
             }
         } catch (winrt::hresult_error const& err) {
-            Latite::getClientMessageQueue().push(util::WStrToStr(err.message().c_str()));
+            Envy::getClientMessageQueue().push(util::WStrToStr(err.message().c_str()));
             return list;
         }
     }
@@ -449,7 +449,7 @@ void PluginManager::unloadAll() {
 bool PluginManager::hasPermission(JsPlugin* script, Permission perm) {
     auto player = SDK::ClientInstance::get()->getLocalPlayer();
     if (!player) {
-#if LATITE_DEBUG
+#if ENVY_DEBUG
         Logger::Warn("[Script] attempt to call hasPermission while player does not exist!");
 #endif
         return false;

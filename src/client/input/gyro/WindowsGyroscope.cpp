@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "WindowsGyroscope.h"
 
-#include "client/Latite.h"
+#include "client/Envy.h"
 
 #include <algorithm>
 #include <cmath>
@@ -39,7 +39,7 @@ WindowsGyroscope::StartResult WindowsGyroscope::start(RequestedSource source, Gy
     }
 
     bool sdlAvailable;
-    sdlAvailable = Latite::get().getControllerInput().startSensors(
+    sdlAvailable = Envy::get().getControllerInput().startSensors(
         [this](std::string const& id, Vec3 const& value, int64_t timestamp) {
             handleSdlGyro(id, value, timestamp);
         },
@@ -110,7 +110,7 @@ void WindowsGyroscope::stop() {
         hadDevices = !sdlDevices.empty() || !systemSensors.empty();
     }
 
-    Latite::get().getControllerInput().stopSensors();
+    Envy::get().getControllerInput().stopSensors();
     stopSystemSensorInput();
 
     {
@@ -217,7 +217,7 @@ int64_t WindowsGyroscope::currentTimestampNanos() const {
         input = systemSensorInput;
     }
 
-    if (source == ActiveSource::Controller) return Latite::get().getControllerInput().currentSensorTimestampNanos(id);
+    if (source == ActiveSource::Controller) return Envy::get().getControllerInput().currentSensorTimestampNanos(id);
     if (source != ActiveSource::SystemSensor || !input) return 0;
     return static_cast<int64_t>(input->GetCurrentTimestamp()) * NANOSECONDS_PER_GAMEINPUT_MICROSECOND;
 }

@@ -1,7 +1,7 @@
 #include "pch.h"
 #include <algorithm>
 #include "ConfigManager.h"
-#include "client/Latite.h"
+#include "client/Envy.h"
 #include "client/feature/module/ModuleManager.h"
 
 namespace {
@@ -30,7 +30,7 @@ namespace {
 }
 
 ConfigManager::ConfigManager() {
-    auto folder = util::GetLatitePath() / "Configs";
+    auto folder = util::GetEnvyPath() / "Configs";
     std::filesystem::create_directory(folder);
     auto path = folder / "default.json";
     masterConfig = std::make_shared<Config>(path);
@@ -43,7 +43,7 @@ bool ConfigManager::loadMaster() {
 void ConfigManager::applyLanguageConfig(std::string_view languageSettingName) {
     for (auto& item : loadedConfig->getOutput()) {
         // Might be a bit hacky
-        if (Latite::getSettings().name() == item->name()) {
+        if (Envy::getSettings().name() == item->name()) {
             std::shared_ptr<Setting> languageSetting;
             const auto legacyDetectLanguage = getLegacyDetectLanguageValue(*item);
 
@@ -55,10 +55,10 @@ void ConfigManager::applyLanguageConfig(std::string_view languageSettingName) {
 
             if (languageSetting) {
                 migrateLegacyLanguageValue(*languageSetting, legacyDetectLanguage);
-                Latite::get().loadLanguageConfig(languageSetting);
+                Envy::get().loadLanguageConfig(languageSetting);
             }
 
-            Latite::get().loadConfig(*item.get());
+            Envy::get().loadConfig(*item.get());
         }
     }
 }
@@ -66,15 +66,15 @@ void ConfigManager::applyLanguageConfig(std::string_view languageSettingName) {
 void ConfigManager::applyGlobalConfig() {
     for (auto& item : loadedConfig->getOutput()) {
         // Might be a bit hacky
-        if (Latite::getSettings().name() == item->name()) {
-            Latite::get().loadConfig(*item.get());
+        if (Envy::getSettings().name() == item->name()) {
+            Envy::get().loadConfig(*item.get());
         }
     }
 }
 
 void ConfigManager::applyModuleConfig() {
     for (auto& item : loadedConfig->getOutput()) {
-        auto mod = Latite::getModuleManager().find(item->name());
+        auto mod = Envy::getModuleManager().find(item->name());
         if (!mod) {
             Logger::Warn("Could not find {} as module in config", item->name());
         } else {
@@ -111,7 +111,7 @@ bool ConfigManager::loadUserConfig(std::wstring const& name) {
 }
 
 std::filesystem::path ConfigManager::getUserPath() {
-    return util::GetLatitePath() / "Configs";
+    return util::GetEnvyPath() / "Configs";
 }
 
 bool ConfigManager::load(std::shared_ptr<Config> cfg) {
@@ -123,9 +123,9 @@ bool ConfigManager::load(std::shared_ptr<Config> cfg) {
 
 bool ConfigManager::save(std::shared_ptr<Config> cfg) {
     std::vector<SettingGroup*> groups = {};
-    groups.push_back(&Latite::getSettings());
+    groups.push_back(&Envy::getSettings());
 
-    Latite::getModuleManager().forEach([&](std::shared_ptr<Module> mod) {
+    Envy::getModuleManager().forEach([&](std::shared_ptr<Module> mod) {
         groups.push_back(mod->settings.get());
     });
 

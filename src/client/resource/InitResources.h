@@ -8,14 +8,14 @@ LOAD_RESOURCE(checkmark_png);
 LOAD_RESOURCE(cog_png);
 LOAD_RESOURCE(document_png);
 LOAD_RESOURCE(hudedit_png);
-LOAD_RESOURCE(latitewhite_png);
+LOAD_RESOURCE(envywhite_png);
 LOAD_RESOURCE(logo_png);
 LOAD_RESOURCE(searchicon_png);
 LOAD_RESOURCE(x_png);
 LOAD_RESOURCE(document_png);
 
 // JavaScript
-LOAD_RESOURCE(latiteapi_js)
+LOAD_RESOURCE(envyapi_js)
 
 // Translations
 LOAD_RESOURCE(lang_ar_SA_json);

@@ -2,7 +2,7 @@
 #include "ClientScriptingObject.h"
 #include "util/Util.h"
 #include "util/ChakraUtil.h"
-#include "client/Latite.h"
+#include "client/Envy.h"
 #include "client/script/PluginManager.h"
 #include "client/feature/command/CommandManager.h"
 #include "client/feature/module/ModuleManager.h"
@@ -29,7 +29,7 @@ JsValueRef ClientScriptingObject::registerEventCallback(JsValueRef callee, bool 
     JS::JsStringToPointer(arguments[1], &myS, &sze);
     std::wstring wstr(myS);
 
-    for (auto& lis : Latite::getPluginManager().eventListeners) {
+    for (auto& lis : Envy::getPluginManager().eventListeners) {
         if (lis.first == wstr) {
             JsContextRef ct;
             JS::JsGetCurrentContext(&ct);
@@ -54,7 +54,7 @@ JsValueRef ClientScriptingObject::runCommandCallback(JsValueRef callee, bool isC
     if (!Chakra::VerifyArgCount(argCount, 2)) return Chakra::GetFalse();
     if (!Chakra::VerifyParameters({ { arguments[1], JsString } })) return JS_INVALID_REFERENCE;
     auto s = Chakra::GetString(arguments[1]);
-    return Latite::getCommandManager().runCommand(Latite::getCommandManager().prefix + util::WStrToStr(s))
+    return Envy::getCommandManager().runCommand(Envy::getCommandManager().prefix + util::WStrToStr(s))
                ? Chakra::GetTrue()
                : Chakra::GetFalse();
 }
@@ -66,7 +66,7 @@ JsValueRef ClientScriptingObject::showNotifCallback(JsValueRef callee, bool isCo
     if (!Chakra::VerifyArgCount(argCount, 2)) return undefined;
     if (!Chakra::VerifyParameters({ { arguments[1], JsString } })) return undefined;
 
-    Latite::getNotifications().push(JsScript::getThis()->getPlugin()->getName() + L": " +
+    Envy::getNotifications().push(JsScript::getThis()->getPlugin()->getName() + L": " +
                                     Chakra::GetString(arguments[1]));
     return undefined;
 }
@@ -117,7 +117,7 @@ void ClientScriptingObject::initScreenManager() {
 }
 
 void ClientScriptingObject::initialize(JsContextRef ctx, JsValueRef parentObj) {
-#if LATITE_DEBUG
+#if ENVY_DEBUG
     Chakra::DefineFunc(object, testCallback, L"test", this);
 #endif
 
@@ -140,7 +140,7 @@ void ClientScriptingObject::initialize(JsContextRef ctx, JsValueRef parentObj) {
     Chakra::DefineFunc(commandManager, smgrRegisterScreenCallback, L"registerScreen");
 
     Chakra::SetPropertyString(object, L"version",
-                              util::StrToWStr(std::string(Latite::version.data(), Latite::version.size())));
+                              util::StrToWStr(std::string(Envy::version.data(), Envy::version.size())));
 }
 
 JsValueRef ClientScriptingObject::mmgrRegisterModuleCallback(JsValueRef callee, bool isConstructor,
@@ -166,9 +166,9 @@ JsValueRef ClientScriptingObject::mmgrRegisterModuleCallback(JsValueRef callee, 
         return undefined;
     }
 
-    if (Latite::getModuleManager().registerScriptModule(mod)) {
+    if (Envy::getModuleManager().registerScriptModule(mod)) {
         JsScript::getThis()->addResource(mod, [](void* obj) {
-            if (!Latite::getModuleManager().deregisterScriptModule(reinterpret_cast<JsModule*>(obj))) {
+            if (!Envy::getModuleManager().deregisterScriptModule(reinterpret_cast<JsModule*>(obj))) {
                 Logger::Warn("Module is already deregistered");
             }
 
@@ -203,7 +203,7 @@ JsValueRef ClientScriptingObject::mmgrDeregisterModuleCallback(JsValueRef callee
         return undefined;
     }
 
-    // Latite::getModuleManager().deregisterScriptModule(mod);
+    // Envy::getModuleManager().deregisterScriptModule(mod);
     JsScript::getThis()->removeResource(mod); // this should deregister it I think
 
     return undefined;
@@ -226,7 +226,7 @@ JsValueRef ClientScriptingObject::mmgrGetModuleByName(JsValueRef callee, bool is
     std::string str = util::WStrToStr(Chakra::GetString(arguments[1]));
 
     auto thi = reinterpret_cast<ClientScriptingObject*>(callbackState);
-    auto mod = Latite::getModuleManager().find(str);
+    auto mod = Envy::getModuleManager().find(str);
 
     JsContextRef ctx;
     JS::JsGetCurrentContext(&ctx);
@@ -276,7 +276,7 @@ JsValueRef ClientScriptingObject::mmgrForEachModule(JsValueRef callee, bool isCo
         return JS_INVALID_REFERENCE;
     }
 
-    Latite::getModuleManager().forEach([&](std::shared_ptr<Module> modul) {
+    Envy::getModuleManager().forEach([&](std::shared_ptr<Module> modul) {
         JsValueRef jsMod = JS_INVALID_REFERENCE;
 
         if (modul->isTextual()) {
@@ -292,7 +292,7 @@ JsValueRef ClientScriptingObject::mmgrForEachModule(JsValueRef callee, bool isCo
 
         JsValueRef r[2] = { arguments[0], jsMod };
         JsValueRef res;
-        Latite::getPluginManager().handleErrors(Chakra::CallFunction(arguments[1], r, 2, &res));
+        Envy::getPluginManager().handleErrors(Chakra::CallFunction(arguments[1], r, 2, &res));
         Chakra::Release(res);
         Chakra::Release(r[1]);
         return false;
@@ -324,9 +324,9 @@ JsValueRef ClientScriptingObject::cmgrRegisterCommandCallback(JsValueRef callee,
         return undefined;
     }
 
-    if (Latite::getCommandManager().registerScriptCommand(cmd)) {
+    if (Envy::getCommandManager().registerScriptCommand(cmd)) {
         JsScript::getThis()->addResource(cmd, [](void* obj) {
-            if (!Latite::getCommandManager().deregisterScriptCommand(reinterpret_cast<JsCommand*>(obj))) {
+            if (!Envy::getCommandManager().deregisterScriptCommand(reinterpret_cast<JsCommand*>(obj))) {
                 Logger::Warn("Script command is already deregistered");
             }
 
@@ -357,7 +357,7 @@ JsValueRef ClientScriptingObject::cmgrDeregisterCommandCallback(JsValueRef calle
 
     JS::JsGetExternalData(arguments[1], reinterpret_cast<void**>(&cmd));
 
-    // Latite::getCommandManager().deregisterScriptCommand(cmd);
+    // Envy::getCommandManager().deregisterScriptCommand(cmd);
     JsScript::getThis()->removeResource(cmd);
 
     return undefined;
@@ -365,7 +365,7 @@ JsValueRef ClientScriptingObject::cmgrDeregisterCommandCallback(JsValueRef calle
 
 JsValueRef ClientScriptingObject::cmgrGetPrefixCallback(JsValueRef callee, bool isConstructor, JsValueRef* arguments,
                                                         unsigned short argCount, void* callbackState) {
-    return Chakra::MakeString(util::StrToWStr(Latite::getCommandManager().prefix));
+    return Chakra::MakeString(util::StrToWStr(Envy::getCommandManager().prefix));
 }
 
 JsValueRef ClientScriptingObject::smgrRegisterScreenCallback(JsValueRef callee, bool isConstructor,
@@ -391,9 +391,9 @@ JsValueRef ClientScriptingObject::smgrRegisterScreenCallback(JsValueRef callee, 
         return undefined;
     }
 
-    if (Latite::getScreenManager().registerScriptScreen(scn)) {
+    if (Envy::getScreenManager().registerScriptScreen(scn)) {
         JsScript::getThis()->addResource(scn, [](void* obj) {
-            if (!Latite::getScreenManager().deregisterScriptScreen(reinterpret_cast<JsScreen*>(obj))) {
+            if (!Envy::getScreenManager().deregisterScriptScreen(reinterpret_cast<JsScreen*>(obj))) {
                 Logger::Warn("Screen is already deregistered");
             }
         });

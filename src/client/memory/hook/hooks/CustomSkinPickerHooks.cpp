@@ -6,7 +6,7 @@
 #include <cstddef>
 #include <vector>
 
-#include "client/Latite.h"
+#include "client/Envy.h"
 #include "mc/Addresses.h"
 #include "util/Logger.h"
 
@@ -29,13 +29,13 @@ namespace {
     }
 
     void queueCancelled(std::shared_ptr<SDK::ImagePickingCallback> callback) {
-        Latite::get().queueForClientThread([callback = std::move(callback)] {
+        Envy::get().queueForClientThread([callback = std::move(callback)] {
             callback->onImagePickCancelled();
         });
     }
 
     void queueSelected(std::shared_ptr<SDK::ImagePickingCallback> callback, std::string path) {
-        Latite::get().queueForClientThread([callback = std::move(callback), path = std::move(path)] {
+        Envy::get().queueForClientThread([callback = std::move(callback), path = std::move(path)] {
             SDK::Core::Path selectedPath { std::move(path) };
             callback->onImagePicked(selectedPath);
         });
@@ -98,8 +98,8 @@ void __fastcall CustomSkinPickerHooks::pickImage(void* appPlatform,
 CustomSkinPickerHooks::CustomSkinPickerHooks()
     : HookGroup("Windows 10 custom-skin picker workaround") {
     // TODO(1.26.50): Remove this hook and the legacy picker implementation entirely.
-    if (!Latite::get().tmp2640Is4240 || !isWindows10() ||
-        !Latite::supportsMinecraftVersion(Latite::get().gameVersion) ||
+    if (!Envy::get().tmp2640Is4240 || !isWindows10() ||
+        !Envy::supportsMinecraftVersion(Envy::get().gameVersion) ||
         !Signatures::AppPlatform_GameCorePC_pickImage.result) {
         return;
     }

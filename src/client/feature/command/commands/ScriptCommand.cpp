@@ -4,7 +4,7 @@
 #include <filesystem>
 #include <nlohmann/json.hpp>
 #include "../CommandManager.h"
-#include "client/Latite.h"
+#include "client/Envy.h"
 #include <client/script/JsPlugin.h>
 
 using namespace winrt::Windows::Storage::Streams;
@@ -27,7 +27,7 @@ bool ScriptCommand::execute(std::string const label, std::vector<std::string> ar
 
     if (args[0] == "load") {
         if (args.size() != 2) return false;
-        auto res = Latite::getPluginManager().loadPlugin(util::StrToWStr(args[1]), true);
+        auto res = Envy::getPluginManager().loadPlugin(util::StrToWStr(args[1]), true);
         if (res) {
             message(util::FormatWString(LocalizeString::get("client.commands.plugin.load.success.name"),
                                         { res->getName(), res->getVersion() }));
@@ -37,12 +37,12 @@ bool ScriptCommand::execute(std::string const label, std::vector<std::string> ar
     } else if (args[0] == "unload") {
         if (args.size() != 2) return false;
         if (args[1] == "all") {
-            Latite::getPluginManager().unloadAll();
+            Envy::getPluginManager().unloadAll();
             message(LocalizeString::get("client.commands.plugin.unload.all.name"));
             return true;
         } else {
-            if (auto script = Latite::getPluginManager().getPluginByName(util::StrToWStr(args[1]))) {
-                Latite::getPluginManager().popScript(script);
+            if (auto script = Envy::getPluginManager().getPluginByName(util::StrToWStr(args[1]))) {
+                Envy::getPluginManager().popScript(script);
                 message(LocalizeString::get("client.commands.plugin.unload.name"));
                 return true;
             }
@@ -55,7 +55,7 @@ bool ScriptCommand::execute(std::string const label, std::vector<std::string> ar
         if (args.size() != 2) return false;
         auto& scr = args[1];
         auto path = scr;
-        if (!std::filesystem::exists(path)) path = (util::GetLatitePath() / ("Plugins") / scr).string();
+        if (!std::filesystem::exists(path)) path = (util::GetEnvyPath() / ("Plugins") / scr).string();
         if (std::filesystem::exists(path)) {
             std::filesystem::rename(path, PluginManager::getPrerunPluginsDir() /
                                               (std::filesystem::path(path).filename().string()));
@@ -70,14 +70,14 @@ bool ScriptCommand::execute(std::string const label, std::vector<std::string> ar
         return true;
     } else if (args[0] == "install") {
         if (args.size() != 2) return false;
-        auto err = Latite::getPluginManager().installScript(args[1]);
+        auto err = Envy::getPluginManager().installScript(args[1]);
         if (!err.has_value()) {
             message(err.error());
             return true;
         }
         message(util::WFormat(
             util::FormatWString(LocalizeString::get("client.commands.plugin.install.name"),
-                                { util::StrToWStr(Latite::getCommandManager().prefix), util::StrToWStr(args[1]) })));
+                                { util::StrToWStr(Envy::getCommandManager().prefix), util::StrToWStr(args[1]) })));
         return true;
     } else {
         return false;

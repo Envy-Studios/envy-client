@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "CPSCounter.h"
-#include "client/Latite.h"
+#include "client/Envy.h"
 
 CPSCounter::CPSCounter()
     : TextModule("CPS", LocalizeString::get("client.textmodule.cpsCounter.name"),
@@ -21,13 +21,13 @@ std::wstringstream CPSCounter::text(bool isDefault, bool inEditor) {
     std::wstringstream wss;
     switch (mode.getSelectedKey()) {
     case 0:
-        wss << Latite::get().getTimings().getCPSL();
+        wss << Envy::get().getTimings().getCPSL();
         break;
     case 1:
-        wss << Latite::get().getTimings().getCPSR();
+        wss << Envy::get().getTimings().getCPSR();
         break;
     case 2:
-        wss << Latite::get().getTimings().getCPSL() << " | " << Latite::get().getTimings().getCPSR();
+        wss << Envy::get().getTimings().getCPSL() << " | " << Envy::get().getTimings().getCPSR();
         break;
     }
     return wss;

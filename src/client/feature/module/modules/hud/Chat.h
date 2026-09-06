@@ -12,7 +12,7 @@ public:
 
 private:
     void onText(Event&);
-    void onLatiteMessage(Event&);
+    void onEnvyMessage(Event&);
     void onRenderLayer(Event&);
 
     void addMessage(std::string const& message);

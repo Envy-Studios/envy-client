@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "Screen.h"
-#include "client/Latite.h"
+#include "client/Envy.h"
 #include "client/event/Eventing.h"
 #include "ScreenManager.h"
 #include "client/event/events/ClickEvent.h"
@@ -9,9 +9,9 @@
 
 Screen::Screen() {
     /*
-    arrow = LoadCursorW(Latite::get().dllInst, IDC_ARROW);
-    hand = LoadCursorW(Latite::get().dllInst, IDC_HAND);
-    ibeam = LoadCursorW(Latite::get().dllInst, IDC_IBEAM);
+    arrow = LoadCursorW(Envy::get().dllInst, IDC_ARROW);
+    hand = LoadCursorW(Envy::get().dllInst, IDC_HAND);
+    ibeam = LoadCursorW(Envy::get().dllInst, IDC_IBEAM);
     */
     // ^ this doesnt work with resources...
 
@@ -40,7 +40,7 @@ void Screen::onUpdate(Event& ev) {
 
 void Screen::close() {
     resetInputState();
-    Latite::getScreenManager().exitCurrentScreen();
+    Envy::getScreenManager().exitCurrentScreen();
 }
 
 void Screen::resetInputState() {

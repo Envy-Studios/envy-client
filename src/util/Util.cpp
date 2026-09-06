@@ -3,7 +3,7 @@
 #include "mc/common/client/game/ClientInstance.h"
 #include "mc/common/client/sound/SoundPlayerInterface.h"
 #include "mc/common/resources/ResourcePackManager.h"
-#include "client/Latite.h"
+#include "client/Envy.h"
 #include "client/input/ControllerInput.h"
 #include "client/render/Renderer.h"
 
@@ -15,11 +15,11 @@
 #endif
 
 namespace {
-    thread_local unsigned int latiteSoundDepth = 0;
+    thread_local unsigned int envySoundDepth = 0;
 
-    struct LatiteSoundScope {
-        LatiteSoundScope() { ++latiteSoundDepth; }
-        ~LatiteSoundScope() { --latiteSoundDepth; }
+    struct EnvySoundScope {
+        EnvySoundScope() { ++envySoundDepth; }
+        ~EnvySoundScope() { --envySoundDepth; }
     };
 
     std::string GetEnvironmentVariableUtf8(wchar_t const* name) {
@@ -222,8 +222,8 @@ std::filesystem::path util::GetRoamingPath() {
     return std::wstring();
 }
 
-std::filesystem::path util::GetLatitePath() {
-    return GetRoamingPath() / "Latite";
+std::filesystem::path util::GetEnvyPath() {
+    return GetRoamingPath() / "Envy";
 }
 
 std::wstring util::StrToWStr(std::string const& s) {
@@ -525,17 +525,17 @@ void util::PlaySoundUI(std::string const& sound, float volume, float pitch) {
     auto* soundPlayerInterface = soundPlayer.get();
     if (!soundPlayerInterface) return;
 
-    LatiteSoundScope scope;
+    EnvySoundScope scope;
     soundPlayerInterface->playUI(sound, volume, pitch);
 }
 
-bool util::IsPlayingLatiteSound() noexcept {
-    return latiteSoundDepth != 0;
+bool util::IsPlayingEnvySound() noexcept {
+    return envySoundDepth != 0;
 }
 
 Color util::LerpColorState(Color const& current, Color const& on, Color const& off, bool state, float speed) {
     Color ret = current;
-    float t = Latite::getRenderer().getDeltaTime() * (speed / 10.f);
+    float t = Envy::getRenderer().getDeltaTime() * (speed / 10.f);
     ret.r = std::lerp(current.r, state ? on.r : off.r, t);
     ret.g = std::lerp(current.g, state ? on.g : off.g, t);
     ret.b = std::lerp(current.b, state ? on.b : off.b, t);

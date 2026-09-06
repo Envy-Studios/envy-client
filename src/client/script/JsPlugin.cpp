@@ -11,13 +11,13 @@ using namespace winrt::Windows::Web::Http;
 using namespace winrt::Windows::Web::Http::Filters;
 
 void JsPlugin::checkTrusted() {
-#ifdef LATITE_DEBUG
+#ifdef ENVY_DEBUG
     trusted = true;
     return;
 #else
 
     trusted = false;
-    std::string url = "https://raw.githubusercontent.com/Imrglop/Latite-Releases/refs/heads/main/script_hashes.txt";
+    std::string url = "https://raw.githubusercontent.com/Imrglop/Envy-Releases/refs/heads/main/script_hashes.txt";
     HttpClient client;
     winrt::Windows::Foundation::Uri uri(winrt::to_hstring(url));
 
@@ -141,7 +141,7 @@ std::shared_ptr<JsScript> JsPlugin::loadAndRunScript(std::wstring relPath) {
 
     auto err = scr->runScript();
     if (err != JsNoError) {
-        Latite::getPluginManager().handleErrors(err);
+        Envy::getPluginManager().handleErrors(err);
         return nullptr;
     }
 
@@ -185,7 +185,7 @@ std::shared_ptr<JsScript> JsPlugin::loadOrFindModule(JsScript* script, std::wstr
     auto err = scr->runScript();
 
     if (err != JsNoError) {
-        Latite::getPluginManager().handleErrors(err);
+        Envy::getPluginManager().handleErrors(err);
         return nullptr;
     }
     return scr;
@@ -194,7 +194,7 @@ std::shared_ptr<JsScript> JsPlugin::loadOrFindModule(JsScript* script, std::wstr
 std::wstring JsPlugin::getCertificate() {
     std::wifstream ifs(getPath() / "certificate");
     if (ifs.fail()) {
-#if LATITE_DEBUG
+#if ENVY_DEBUG
         Logger::Info("Failed to get certificate");
 #endif
         return L"";
@@ -237,7 +237,7 @@ std::optional<std::wstring> JsPlugin::getHash(std::filesystem::path const& main)
             toHash << ifs.rdbuf();
             hasRead = true;
         }
-#if LATITE_DEBUG
+#if ENVY_DEBUG
         else {
             Logger::Warn("[Script] Error opening script file {} to get hash: {}", fil.string(), errno);
         }

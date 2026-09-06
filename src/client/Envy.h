@@ -20,16 +20,16 @@ namespace sdk {
     class Font;
 }
 
-class Latite final : public Listener {
+class Envy final : public Listener {
 public:
-    [[nodiscard]] static Latite& get() noexcept;
+    [[nodiscard]] static Envy& get() noexcept;
 
     [[nodiscard]] static class ModuleManager& getModuleManager() noexcept;
     [[nodiscard]] static class CommandManager& getCommandManager() noexcept;
     [[nodiscard]] static class ConfigManager& getConfigManager() noexcept;
     [[nodiscard]] static class ClientMessageQueue& getClientMessageQueue() noexcept;
     [[nodiscard]] static class SettingGroup& getSettings() noexcept;
-    [[nodiscard]] static class LatiteHooks& getHooks() noexcept;
+    [[nodiscard]] static class EnvyHooks& getHooks() noexcept;
     [[nodiscard]] static class Eventing& getEventing() noexcept;
     [[nodiscard]] static class Renderer& getRenderer() noexcept;
     [[nodiscard]] static class ScreenManager& getScreenManager() noexcept;
@@ -62,8 +62,8 @@ public:
     void deferD2DResourceRelease(IUnknown* resource) noexcept;
     void releaseDeferredD2DResources() noexcept;
 
-    Latite() = default;
-    ~Latite() = default;
+    Envy() = default;
+    ~Envy() = default;
 
     static constexpr std::string_view version = "v2.9.1";
     static constexpr std::array<std::string_view, 1> supportedMinecraftVersions = {
@@ -118,7 +118,7 @@ public:
         }
     }
 
-    std::vector<std::string> getLatiteUsers();
+    std::vector<std::string> getEnvyUsers();
 
     [[nodiscard]] KeyValue getMenuKey() { return std::get<KeyValue>(menuKey); }
 
@@ -136,7 +136,7 @@ public:
 
     [[nodiscard]] bool shouldRenderTextShadows() { return std::get<BoolValue>(textShadow); }
 
-#ifdef LATITE_DEBUG
+#ifdef ENVY_DEBUG
     [[nodiscard]] bool shouldRenderDebugTextRects() { return std::get<BoolValue>(debugTextRects); }
 #endif
 
@@ -144,7 +144,7 @@ public:
 
     [[nodiscard]] SDK::Font* getFont();
 
-    void fetchLatiteUsers();
+    void fetchEnvyUsers();
     std::wstring GetCurrentModuleFilePath(HMODULE hModule);
     static std::string getBuildTimestamp();
 
@@ -162,8 +162,8 @@ private:
     std::optional<LocalizeData> l10nData;
 
     bool downloadingAssets = false;
-    std::vector<std::string> latiteUsers;
-    std::vector<std::string> latiteUsersDirty;
+    std::vector<std::string> envyUsers;
+    std::vector<std::string> envyUsersDirty;
 
     std::queue<std::function<void(SDK::MinecraftUIRenderContext* ctx)>> uiRenderQueue;
     std::queue<std::function<void(ID2D1DeviceContext* ctx)>> dxRenderQueue;
@@ -191,7 +191,7 @@ private:
     ValueType minimalViewBob = BoolValue(false);
     ValueType minecraftRenderer = BoolValue(false);
     ValueType textShadow = BoolValue(true);
-#ifdef LATITE_DEBUG
+#ifdef ENVY_DEBUG
     ValueType debugTextRects = BoolValue(false);
 #endif
     ValueType centerCursorMenus = BoolValue(false);

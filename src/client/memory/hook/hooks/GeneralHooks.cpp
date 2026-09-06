@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "GeneralHooks.h"
-#include "client/Latite.h"
+#include "client/Envy.h"
 #include "client/misc/ClientMessageQueue.h"
 #include "client/feature/command/commandmanager.h"
 #include "client/event/Eventing.h"
@@ -44,18 +44,18 @@ namespace {
 
 void GenericHooks::MultiPlayerLevel__subTick(SDK::Level* level) {
     TickEvent ev(level);
-    Latite::getEventing().dispatch(ev);
-    Latite::getClientMessageQueue().doPrint(100);
+    Envy::getEventing().dispatch(ev);
+    Envy::getClientMessageQueue().doPrint(100);
 
     PluginManager::Event sEv { L"world-tick", {}, false };
-    Latite::getPluginManager().dispatchEvent(sEv);
+    Envy::getPluginManager().dispatchEvent(sEv);
 
     MultiPlayerLevel__subTickHook->oFunc<decltype(&MultiPlayerLevel__subTick)>()(level);
 }
 
 void* GenericHooks::ChatScreenController_sendChatMessage(void* controller, std::string& message) {
-    if (message.starts_with(Latite::getCommandManager().prefix)) {
-        Latite::getCommandManager().runCommand(message);
+    if (message.starts_with(Envy::getCommandManager().prefix)) {
+        Envy::getCommandManager().runCommand(message);
         return 0;
     }
 
@@ -66,7 +66,7 @@ void* GenericHooks::ChatScreenController_sendChatMessage(void* controller, std::
         PluginManager::Event::Value val { L"message" };
         val.val = util::StrToWStr(message);
         PluginManager::Event sev { L"send-chat", { val }, true };
-        if (Latite::getPluginManager().dispatchEvent(sev)) return nullptr;
+        if (Envy::getPluginManager().dispatchEvent(sev)) return nullptr;
     }
 
     return ChatScreenController_sendChatMesageHook->oFunc<decltype(&ChatScreenController_sendChatMessage)>()(controller,
@@ -86,7 +86,7 @@ void* GenericHooks::GameRenderer_renderCurrentFrame(void* rend) {
 LRESULT GenericHooks::MainWindow__windowProcCallback(HWND hwnd, UINT msg, WPARAM wParam,
                                                      LPARAM lParam) { // Name from China
     if (msg == WM_SETCURSOR) {
-        std::optional<std::reference_wrapper<Screen>> activeScreen = Latite::get().getScreenManager().getActiveScreen();
+        std::optional<std::reference_wrapper<Screen>> activeScreen = Envy::get().getScreenManager().getActiveScreen();
         SDK::GameCore* gameCore = SDK::GameCore::get();
         constexpr uintptr_t mouseGrabbedOffset = 0x7D8; // AppPlatform_GameCore::mMouseCapture.
         const bool gameMouseGrabbed =
@@ -118,7 +118,7 @@ LRESULT GenericHooks::MainWindow__windowProcCallback(HWND hwnd, UINT msg, WPARAM
             val2.val = util::StrToWStr(str);
 
             PluginManager::Event sEv { L"key-press", { val, val2, val3 }, true };
-            if (Latite::getPluginManager().dispatchEvent(sEv)) return DefWindowProcW(hwnd, msg, wParam, lParam);
+            if (Envy::getPluginManager().dispatchEvent(sEv)) return DefWindowProcW(hwnd, msg, wParam, lParam);
         }
 
         KeyUpdateEvent ev { key, isDown };
@@ -170,7 +170,7 @@ bool GenericHooks::GameCore_handleMouseInput(void* a1, void* a2, void* a3) { // 
             }
 
             PluginManager::Event ev { L"click", values, true };
-            if (Latite::getPluginManager().dispatchEvent(ev)) {
+            if (Envy::getPluginManager().dispatchEvent(ev)) {
                 mouse->inputs.erase(it);
                 continue;
             }
@@ -185,7 +185,7 @@ bool GenericHooks::GameCore_handleMouseInput(void* a1, void* a2, void* a3) { // 
 
 BOOL __stdcall GenericHooks::hkLoadLibraryW(LPCWSTR lib) {
     // prevent double injections
-#ifdef LATITE_BETA
+#ifdef ENVY_BETA
     abort();
 #endif
     return 0;
@@ -244,7 +244,7 @@ void GenericHooks::ClientInputUpdateSystemInternal_tickUpdateClientInput(uintptr
     {
         PluginManager::Event ev { L"pre-move", {}, true };
 
-        if (Latite::getPluginManager().dispatchEvent(ev)) {
+        if (Envy::getPluginManager().dispatchEvent(ev)) {
             return;
         }
     }
@@ -265,7 +265,7 @@ void GenericHooks::ClientInputUpdateSystemInternal_tickUpdateClientInput(uintptr
     {
         PluginManager::Event ev { L"post-move", {}, false };
 
-        Latite::getPluginManager().dispatchEvent(ev);
+        Envy::getPluginManager().dispatchEvent(ev);
     }
 }
 
@@ -284,7 +284,7 @@ bool GenericHooks::Level_initialize(SDK::Level* obj, void* palette, void* settin
         Level_initializeHook->oFunc<decltype(&Level_initialize)>()(obj, palette, settings, tickRange, experiments, a6);
     if (obj->isClientSide()) {
         PluginManager::Event ev { L"join-game", {}, false };
-        Latite::getPluginManager().dispatchEvent(ev);
+        Envy::getPluginManager().dispatchEvent(ev);
     }
     return o;
 }
@@ -292,7 +292,7 @@ bool GenericHooks::Level_initialize(SDK::Level* obj, void* palette, void* settin
 void* GenericHooks::Level_startLeaveGame(SDK::Level* obj) {
     if (obj->isClientSide()) {
         PluginManager::Event ev { L"leave-game", {}, false };
-        Latite::getPluginManager().dispatchEvent(ev);
+        Envy::getPluginManager().dispatchEvent(ev);
     }
 
     LeaveGameEvent ev {};
@@ -401,14 +401,14 @@ void GenericHooks::hkOnUri(void* obj, void* pUri) {
 
     ActivationUri* uri = reinterpret_cast<ActivationUri*>(pUri);
 
-    if (uri->verb == "addlatiteplugin") {
+    if (uri->verb == "addenvyplugin") {
         auto pluginName = uri->arguments.find("id");
 
         if (pluginName != uri->arguments.end()) {
-            Latite::getNotifications().push(L"Installing plugin " + util::StrToWStr(pluginName->second));
-            auto result = Latite::getPluginManager().installScript(pluginName->second);
+            Envy::getNotifications().push(L"Installing plugin " + util::StrToWStr(pluginName->second));
+            auto result = Envy::getPluginManager().installScript(pluginName->second);
             if (!result.has_value()) {
-                Latite::getNotifications().push(util::StrToWStr(result.error()));
+                Envy::getNotifications().push(util::StrToWStr(result.error()));
             }
         }
         return;
@@ -418,7 +418,7 @@ void GenericHooks::hkOnUri(void* obj, void* pUri) {
 }
 
 void GenericHooks::hkGrabCursor(SDK::ClientInstance* obj) {
-    if (Latite::get().getScreenManager().getActiveScreen()) return;
+    if (Envy::get().getScreenManager().getActiveScreen()) return;
     GrabCursorHook->oFunc<decltype(&hkGrabCursor)>()(obj);
 }
 
@@ -447,7 +447,7 @@ void GenericHooks::hkAppPlatformGDK_releaseMouse(void* _this) {
 
 void GenericHooks::hkForwardSoundSubtitle(void* screenModel, std::string const& subtitle, unsigned int direction,
                                           unsigned int isOwnSound) {
-    if (util::IsPlayingLatiteSound()) return;
+    if (util::IsPlayingEnvySound()) return;
 
     ForwardSoundSubtitleHook->oFunc<decltype(&hkForwardSoundSubtitle)>()(screenModel, subtitle, direction, isOwnSound);
 }

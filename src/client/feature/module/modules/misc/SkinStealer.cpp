@@ -10,7 +10,7 @@ SkinStealer::SkinStealer()
 }
 
 void SkinStealer::onEnable() {
-    Latite::getScreenManager().showScreen<SkinStealerScreen>();
+    Envy::getScreenManager().showScreen<SkinStealerScreen>();
 }
 
 void SkinStealer::onDisable() {

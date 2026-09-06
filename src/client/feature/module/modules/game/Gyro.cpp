@@ -149,7 +149,7 @@ Gyro::Gyro()
 }
 
 namespace {
-    constexpr float MAXIMUM_VERIFICATION_BIAS_DELTA = LatiteMath::deg2rad(0.05f);
+    constexpr float MAXIMUM_VERIFICATION_BIAS_DELTA = EnvyMath::deg2rad(0.05f);
     constexpr float DEGREES_PER_RADIAN = 180.f / pi_f;
 
     float wrapDegrees(float angle) {
@@ -223,13 +223,13 @@ void Gyro::onEnable() {
     observedSourceGeneration = sensor.sourceGeneration();
 
     if (!startResult.inputAvailable) {
-        Latite::getNotifications().push(LocalizeString::get("client.module.gyro.inputUnavailable"));
+        Envy::getNotifications().push(LocalizeString::get("client.module.gyro.inputUnavailable"));
         return;
     }
     if (!startResult.sensorAvailable)
-        Latite::getNotifications().push(unavailableMessage());
+        Envy::getNotifications().push(unavailableMessage());
     else
-        Latite::getNotifications().push(LocalizeString::get("client.module.gyro.connected").value() +
+        Envy::getNotifications().push(LocalizeString::get("client.module.gyro.connected").value() +
                                         sensor.activeDeviceName());
 }
 
@@ -246,7 +246,7 @@ void Gyro::onTurnDelta(Event& event) {
 
     auto* client = SDK::ClientInstance::get();
     if (!gyroActive || !client || !client->minecraftGame || !client->getLocalPlayer() ||
-        !client->minecraftGame->isCursorGrabbed() || Latite::get().getScreenManager().getActiveScreen()) {
+        !client->minecraftGame->isCursorGrabbed() || Envy::get().getScreenManager().getActiveScreen()) {
         resetInput();
         return;
     }
@@ -312,7 +312,7 @@ void Gyro::onFocusLost(Event&) {
 void Gyro::onUpdate(Event&) {
     bool blocked = isFlickStickBlocked();
     if (blocked && !flickStickBlocked && std::get<BoolValue>(flickStick).value) {
-        Latite::getNotifications().push(LocalizeString::get("client.module.gyro.flickStick.blockedOnGalaxite"));
+        Envy::getNotifications().push(LocalizeString::get("client.module.gyro.flickStick.blockedOnGalaxite"));
     }
     if (blocked != flickStickBlocked) resetFlickStick();
     flickStickBlocked = blocked;
@@ -336,7 +336,7 @@ void Gyro::onUpdate(Event&) {
 
     if (!calibrationActive.load(std::memory_order_acquire)) return;
 
-    auto& screen = Latite::getScreenManager().get<GyroCalibrationScreen>();
+    auto& screen = Envy::getScreenManager().get<GyroCalibrationScreen>();
     screen.updateSampleCount(calibrationSamplesReceived.load(std::memory_order_acquire));
     if (calibrationDeadline == std::chrono::steady_clock::time_point {} ||
         std::chrono::steady_clock::now() < calibrationDeadline) {
@@ -497,7 +497,7 @@ float Gyro::consumeFlickStickDelta() {
 
     std::string controllerId;
     if (sensor.activeSource() == WindowsGyroscope::ActiveSource::Controller) controllerId = sensor.activeDeviceId();
-    std::optional<Vec2> stick = Latite::get().getControllerInput().rightStick(controllerId);
+    std::optional<Vec2> stick = Envy::get().getControllerInput().rightStick(controllerId);
     if (!stick) {
         flickStickEngaged = false;
         return yawDelta;
@@ -578,9 +578,9 @@ void Gyro::handleSourceChange(bool announce) {
     }
     if (!announce) return;
     if (sensor.activeSource() == WindowsGyroscope::ActiveSource::None)
-        Latite::getNotifications().push(unavailableMessage());
+        Envy::getNotifications().push(unavailableMessage());
     else
-        Latite::getNotifications().push(LocalizeString::get("client.module.gyro.connected").value() +
+        Envy::getNotifications().push(LocalizeString::get("client.module.gyro.connected").value() +
                                         sensor.activeDeviceName());
 }
 
@@ -669,7 +669,7 @@ std::wstring Gyro::unavailableMessage() const {
 }
 
 void Gyro::showCalibrationScreen(CalibrationPurpose purpose) {
-    auto& screenManager = Latite::getScreenManager();
+    auto& screenManager = Envy::getScreenManager();
     auto& screen = screenManager.get<GyroCalibrationScreen>();
     GyroCalibrationScreen::Purpose screenPurpose = GyroCalibrationScreen::Purpose::Calibration;
     if (purpose == CalibrationPurpose::MeasureNoise) screenPurpose = GyroCalibrationScreen::Purpose::Diagnostics;
@@ -741,7 +741,7 @@ void Gyro::beginCalibration(CalibrationPurpose purpose) {
     calibrationDeadline = std::chrono::steady_clock::now() + expectedDuration + std::chrono::milliseconds(2500);
     calibrationActive.store(true, std::memory_order_release);
 
-    auto& screenManager = Latite::getScreenManager();
+    auto& screenManager = Envy::getScreenManager();
     auto& screen = screenManager.get<GyroCalibrationScreen>();
     screen.showProgress(screenPurpose, progressStage, sensor.activeDeviceName(), expectedDuration, [this] {
         cancelCalibration();
@@ -872,7 +872,7 @@ void Gyro::showCalibrationResult(CalibrationPurpose purpose, bool successful, st
     GyroCalibrationScreen::Purpose screenPurpose = GyroCalibrationScreen::Purpose::Calibration;
     if (purpose == CalibrationPurpose::MeasureNoise) screenPurpose = GyroCalibrationScreen::Purpose::Diagnostics;
 
-    auto& screenManager = Latite::getScreenManager();
+    auto& screenManager = Envy::getScreenManager();
     auto& screen = screenManager.get<GyroCalibrationScreen>();
     screen.showResult(screenPurpose, successful, sensor.activeDeviceName(), summary, detail);
     screenManager.showScreen<GyroCalibrationScreen>();

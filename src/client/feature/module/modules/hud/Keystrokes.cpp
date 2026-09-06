@@ -2,7 +2,7 @@
 #include "Keystrokes.h"
 #include "client/input/Keyboard.h"
 #include <array>
-#include <client/Latite.h>
+#include <client/Envy.h>
 
 Keystrokes::Keystrokes()
     : HUDModule("Keystrokes", LocalizeString::get("client.hudmodule.keystrokes.name"),
@@ -177,7 +177,7 @@ void Keystrokes::render(DrawUtil& dc, bool, bool inEditor) {
             std::wstring str = L"LMB";
 
             if (std::get<BoolValue>(cps)) {
-                str += L"\n" + std::to_wstring(Latite::get().getTimings().getCPSL()) + L" CPS";
+                str += L"\n" + std::to_wstring(Envy::get().getTimings().getCPSL()) + L" CPS";
             }
 
             dc.drawText(mb, str, btn.textCol, Renderer::FontSelection::SecondaryLight, std::get<FloatValue>(textSize),
@@ -196,7 +196,7 @@ void Keystrokes::render(DrawUtil& dc, bool, bool inEditor) {
             std::wstring str = L"RMB";
 
             if (std::get<BoolValue>(cps)) {
-                str += L"\n" + std::to_wstring(Latite::get().getTimings().getCPSR()) + L" CPS";
+                str += L"\n" + std::to_wstring(Envy::get().getTimings().getCPSR()) + L" CPS";
             }
 
             dc.drawText(mb, str, btn.textCol, Renderer::FontSelection::SecondaryLight, std::get<FloatValue>(textSize),
@@ -242,8 +242,8 @@ void Keystrokes::render(DrawUtil& dc, bool, bool inEditor) {
     int cpsR = 0;
 
     if (!inEditor) {
-        cpsL = Latite::get().getTimings().getCPSL();
-        cpsR = Latite::get().getTimings().getCPSR();
+        cpsL = Envy::get().getTimings().getCPSL();
+        cpsR = Envy::get().getTimings().getCPSR();
     }
 
     this->rect.right = rect.left + pos.x;
@@ -253,11 +253,11 @@ void Keystrokes::render(DrawUtil& dc, bool, bool inEditor) {
 Keystrokes::Keystroke::Keystroke(std::string const& inputMapping, GetInputFunc getInput)
     : Stroke(getInput)
     , mapping(inputMapping) {
-    vKey = Latite::getKeyboard().getMappedKey(inputMapping);
+    vKey = Envy::getKeyboard().getMappedKey(inputMapping);
     keyName = util::StrToWStr(util::KeyToString(vKey));
 }
 
 void Keystrokes::Keystroke::updateKeyName() {
-    vKey = Latite::getKeyboard().getMappedKey(mapping);
+    vKey = Envy::getKeyboard().getMappedKey(mapping);
     keyName = util::StrToWStr(util::KeyToString(vKey));
 }

@@ -3,7 +3,7 @@
 #include <functional>
 #include <exception>
 #include <util/ChakraUtil.h>
-#ifdef LATITE_CRASH_REPORTING
+#ifdef ENVY_CRASH_REPORTING
 #include "util/ExceptionHandler.h"
 #endif
 
@@ -61,7 +61,7 @@ public:
         JsValueRef call();
         virtual void getArgs() {};
 
-#ifdef LATITE_CRASH_REPORTING
+#ifdef ENVY_CRASH_REPORTING
         static void __cdecl runWithCppBoundary(void* context) {
             auto* operation = static_cast<AsyncOperation*>(context);
             DebugExceptionHandler::ErrorBoundaryScope errorBoundaryScope;
@@ -71,7 +71,7 @@ public:
                 LogExceptionDetails(e);
                 DebugExceptionHandler::AbortProcess();
             } catch (...) {
-                LogUnknownExceptionDetails("Caught unknown exception in a Latite async operation");
+                LogUnknownExceptionDetails("Caught unknown exception in a Envy async operation");
                 DebugExceptionHandler::AbortProcess();
             }
         }
@@ -94,10 +94,10 @@ public:
         }
 
         void run() {
-#ifdef LATITE_CRASH_REPORTING
+#ifdef ENVY_CRASH_REPORTING
             thr = std::make_shared<std::thread>([this] {
                 DebugExceptionHandler::RunVoidWithSehGuard(runWithCppBoundary, this,
-                                                           "Caught SEH exception in a Latite async operation");
+                                                           "Caught SEH exception in a Envy async operation");
             });
 #else
             thr = std::make_shared<std::thread>(std::thread(initFunc, this));

@@ -64,7 +64,7 @@ void Hitboxes::onRenderLevel(RenderLevelEvent& event) {
         float eyeLine = eyePos;
         bool customEyeLine = false;
 
-        if (customEyeLine = LatiteMath::aequals(bb.lower.y, eyePos)) {
+        if (customEyeLine = EnvyMath::aequals(bb.lower.y, eyePos)) {
             eyeLine = bb.lower.y + (bb.higher.y - bb.lower.y) * 0.85f;
         }
 

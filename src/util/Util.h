@@ -14,7 +14,7 @@ struct HSV;
 namespace util {
     extern std::filesystem::path GetRootPath();
     extern std::filesystem::path GetRoamingPath();
-    extern std::filesystem::path GetLatitePath();
+    extern std::filesystem::path GetEnvyPath();
     extern std::wstring StrToWStr(std::string const& s);
     extern std::string WStrToStr(std::wstring const& ws);
     extern std::string RedactPrivatePaths(std::string text);
@@ -42,7 +42,7 @@ namespace util {
     extern std::string ToUpper(std::string const& s);
     extern std::vector<std::string> SplitString(std::string const& s, char delim);
     extern void PlaySoundUI(std::string const& sound, float volume = 1.f, float pitch = 1.f);
-    [[nodiscard]] extern bool IsPlayingLatiteSound() noexcept;
+    [[nodiscard]] extern bool IsPlayingEnvySound() noexcept;
 
     extern Color LerpColorState(Color const& current, ::Color const& on, Color const& off, bool state,
                                 float speed = 3.f);

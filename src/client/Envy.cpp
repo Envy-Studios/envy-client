@@ -1,9 +1,9 @@
 ﻿#include "pch.h"
-// LatiteRecode.cpp : Defines the entry point for the application.
+// EnvyRecode.cpp : Defines the entry point for the application.
 //
 #include <cstdint>
 
-#include "Latite.h"
+#include "Envy.h"
 #include "BuildTimestamp.h"
 #include "localization/LocalizeString.h"
 
@@ -62,14 +62,14 @@ using namespace std;
 
 namespace {
     alignas(Eventing) char eventing[sizeof(Eventing)] = {};
-    alignas(Latite) char latiteBuf[sizeof(Latite)] = {};
+    alignas(Envy) char envyBuf[sizeof(Envy)] = {};
     alignas(Renderer) char rendererBuf[sizeof(Renderer)] = {};
     alignas(ModuleManager) char mmgrBuf[sizeof(ModuleManager)] = {};
     alignas(ClientMessageQueue) char messageSinkBuf[sizeof(ClientMessageQueue)] = {};
     alignas(CommandManager) char commandMgrBuf[sizeof(CommandManager)] = {};
     alignas(ConfigManager) char configMgrBuf[sizeof(ConfigManager)] = {};
     alignas(SettingGroup) char mainSettingGroup[sizeof(SettingGroup)] = {};
-    alignas(LatiteHooks) char hooks[sizeof(LatiteHooks)] = {};
+    alignas(EnvyHooks) char hooks[sizeof(EnvyHooks)] = {};
     alignas(ScreenManager) char scnMgrBuf[sizeof(ScreenManager)] = {};
     alignas(Assets) char assetsBuf[sizeof(Assets)] = {};
     alignas(PluginManager) char scriptMgrBuf[sizeof(PluginManager)] = {};
@@ -100,22 +100,31 @@ namespace {
 /*return {&Signatures_1_18_12::__VA_ARGS__, &Signatures::__VA_ARGS__}; }*/\
 )()
 
-#define LATITE_EXPORT extern "C" __declspec(dllexport)
+#define ENVY_EXPORT extern "C" __declspec(dllexport)
 
-LATITE_EXPORT const char* LatiteGetDllVersion() noexcept {
-    return Latite::version.data();
+ENVY_EXPORT const char* EnvyGetDllVersion() noexcept {
+    return Envy::version.data();
 }
 
-LATITE_EXPORT uint32_t LatiteGetSupportedMinecraftVersionCount() noexcept {
-    return Latite::supportedMinecraftVersions.size();
+ENVY_EXPORT uint32_t EnvyGetSupportedMinecraftVersionCount() noexcept {
+    return Envy::supportedMinecraftVersions.size();
 }
 
-LATITE_EXPORT const char* LatiteGetSupportedMinecraftVersion(uint32_t index) noexcept {
-    if (index >= Latite::supportedMinecraftVersions.size()) {
+ENVY_EXPORT const char* EnvyGetSupportedMinecraftVersion(uint32_t index) noexcept {
+    if (index >= Envy::supportedMinecraftVersions.size()) {
         return nullptr;
     }
 
-    return Latite::supportedMinecraftVersions[index].data();
+    return Envy::supportedMinecraftVersions[index].data();
+}
+
+// Legacy exports: loaders/injectors built against the original "Latite*" ABI keep working.
+ENVY_EXPORT const char* LatiteGetDllVersion() noexcept { return EnvyGetDllVersion(); }
+ENVY_EXPORT uint32_t LatiteGetSupportedMinecraftVersionCount() noexcept {
+    return EnvyGetSupportedMinecraftVersionCount();
+}
+ENVY_EXPORT const char* LatiteGetSupportedMinecraftVersion(uint32_t index) noexcept {
+    return EnvyGetSupportedMinecraftVersion(index);
 }
 
 DWORD __stdcall startThreadImpl(HINSTANCE dll) {
@@ -123,24 +132,24 @@ DWORD __stdcall startThreadImpl(HINSTANCE dll) {
     // Needed for Logger
     new (messageSinkBuf) ClientMessageQueue;
     new (eventing) Eventing();
-    new (latiteBuf) Latite;
+    new (envyBuf) Envy;
     new (notificaitonsBuf) Notifications;
 
-    std::filesystem::create_directory(util::GetLatitePath());
-    std::filesystem::create_directory(util::GetLatitePath() / "Assets");
-    LatiteTemp::cleanup();
+    std::filesystem::create_directory(util::GetEnvyPath());
+    std::filesystem::create_directory(util::GetEnvyPath() / "Assets");
+    EnvyTemp::cleanup();
     Logger::Setup();
 
-#ifdef LATITE_CRASH_REPORTING
+#ifdef ENVY_CRASH_REPORTING
     DebugExceptionHandler::Install();
 #endif
 
-#if defined(LATITE_NIGHTLY)
-    Logger::Info("Latite Client [NIGHTLY] {}", Latite::version);
-#elif defined(LATITE_DEBUG)
-    Logger::Info("Latite Client [DEBUG] {}", Latite::version);
+#if defined(ENVY_NIGHTLY)
+    Logger::Info("Envy Client [NIGHTLY] {}", Envy::version);
+#elif defined(ENVY_DEBUG)
+    Logger::Info("Envy Client [DEBUG] {}", Envy::version);
 #else
-    Logger::Info("Latite Client {}", Latite::version);
+    Logger::Info("Envy Client {}", Envy::version);
 #endif
 
     char path[MAX_PATH] {};
@@ -167,9 +176,9 @@ DWORD __stdcall startThreadImpl(HINSTANCE dll) {
         const auto build = HIWORD(fileInfo->dwFileVersionLS);
 
         // TODO(1.26.50): Remove the pre-1.26.44 compatibility flag and its guarded workarounds.
-        if (build < 44) Latite::get().tmp2640Is4240 = true;
+        if (build < 44) Envy::get().tmp2640Is4240 = true;
 
-        Latite::get().gameVersion = std::format("{}.{}.{}", major, minor, build);
+        Envy::get().gameVersion = std::format("{}.{}.{}", major, minor, build);
     }
 
     /*winrt::Windows::ApplicationModel::Package package = winrt::Windows::ApplicationModel::Package::Current();
@@ -182,29 +191,29 @@ DWORD __stdcall startThreadImpl(HINSTANCE dll) {
         int ps = std::stoi(rem);
         std::stringstream ss;
         ss << version.Major << "." << version.Minor << "." << ps;// hacky
-        Latite::get().gameVersion = ss.str();
+        Envy::get().gameVersion = ss.str();
     }*/
-    Logger::Info("Minecraft {}", Latite::get().gameVersion);
+    Logger::Info("Minecraft {}", Envy::get().gameVersion);
 
     Logger::Info("Loading assets");
-    Latite::get().dllInst = dll;
+    Envy::get().dllInst = dll;
     // ... init assets
-    Latite::get().initL10n();
+    Envy::get().initL10n();
 
     Logger::Info("Resolving signatures..");
 
     int sigCount = 0;
     int deadCount = 0;
 
-    if (Latite::supportsMinecraftVersion(Latite::get().gameVersion)) {
+    if (Envy::supportsMinecraftVersion(Envy::get().gameVersion)) {
         // not needed as it will always just be latest
         // SDK::internalVers = vers;
     } else {
         std::stringstream ss;
-        ss << "Latite Client does not support your version: " << Latite::get().gameVersion
-           << ". Latite only supports the following versions:\n\n";
+        ss << "Envy Client does not support your version: " << Envy::get().gameVersion
+           << ". Envy only supports the following versions:\n\n";
 
-        for (const auto key : Latite::supportedMinecraftVersions) {
+        for (const auto key : Envy::supportedMinecraftVersions) {
             ss << key << "\n";
         }
 
@@ -270,12 +279,12 @@ DWORD __stdcall startThreadImpl(HINSTANCE dll) {
     };
 
     // TODO(1.26.50): Remove the custom Windows 10 picker signature along with its compatibility hook.
-    if (Latite::get().tmp2640Is4240) {
+    if (Envy::get().tmp2640Is4240) {
         sigList.push_back(MVSIG(AppPlatform_GameCorePC_pickImage));
     }
 
     new (configMgrBuf) ConfigManager();
-    if (!Latite::getConfigManager().loadMaster()) {
+    if (!Envy::getConfigManager().loadMaster()) {
         Logger::Fatal("Could not load master config!");
     } else {
         Logger::Info("Loaded master config");
@@ -283,11 +292,11 @@ DWORD __stdcall startThreadImpl(HINSTANCE dll) {
     new (mainSettingGroup) SettingGroup("global");
 
     // The Language setting is a special case because we need it to apply names to other global settings.
-    Latite::get().initLanguageSetting();
-    Latite::getConfigManager().applyLanguageConfig("language");
+    Envy::get().initLanguageSetting();
+    Envy::getConfigManager().applyLanguageConfig("language");
 
-    Latite::get().initSettings();
-    Latite::getConfigManager().applyGlobalConfig();
+    Envy::get().initSettings();
+    Envy::getConfigManager().applyGlobalConfig();
 
     new (mmgrBuf) ModuleManager;
     new (commandMgrBuf) CommandManager;
@@ -301,7 +310,7 @@ DWORD __stdcall startThreadImpl(HINSTANCE dll) {
         if (!entry.first->mod) continue;
         auto res = entry.first->resolve();
         if (!res) {
-#if LATITE_DEBUG
+#if ENVY_DEBUG
             Logger::Warn("Signature {} failed to resolve!", entry.first->name);
 #endif
             deadCount++;
@@ -311,12 +320,12 @@ DWORD __stdcall startThreadImpl(HINSTANCE dll) {
             sigCount++;
         }
     }
-#if LATITE_DEBUG
+#if ENVY_DEBUG
     Logger::Info("Resolved {} signatures ({} dead)", sigCount, deadCount);
 #endif
 
     MH_Initialize();
-    new (hooks) LatiteHooks();
+    new (hooks) EnvyHooks();
 
     new (keyboardBuf) Keyboard(reinterpret_cast<int*>(Signatures::KeyMap.result));
 
@@ -326,20 +335,20 @@ DWORD __stdcall startThreadImpl(HINSTANCE dll) {
         std::this_thread::sleep_for(10ms);
     }
 
-    Latite::get().initialize(dll);
+    Envy::get().initialize(dll);
 
-    Logger::Info("Initialized Latite Client");
+    Logger::Info("Initialized Envy Client");
     return 0ul;
     END_ERROR_HANDLER
 }
 
 DWORD __stdcall startThread(LPVOID context) {
-#ifdef LATITE_CRASH_REPORTING
+#ifdef ENVY_CRASH_REPORTING
     return static_cast<DWORD>(DebugExceptionHandler::RunWithSehGuard(
         [](void* param) -> std::uintptr_t {
             return startThreadImpl(static_cast<HINSTANCE>(param));
         },
-        context, "Caught SEH exception in Latite startup thread"));
+        context, "Caught SEH exception in Envy startup thread"));
 #else
     return startThreadImpl(static_cast<HINSTANCE>(context));
 #endif
@@ -365,36 +374,36 @@ BOOL WINAPI DllMainImpl(HINSTANCE hinstDLL, // handle to DLL module
 
         // Remove singletons
 
-        Latite::getHooks().disable();
+        Envy::getHooks().disable();
 
         // Wait for all running hooks accross different threads to stop executing
         std::this_thread::sleep_for(200ms);
 
-        if (!Latite::get().isEjectReadyForRenderThread()) {
-            Latite::getConfigManager().saveCurrentConfig();
+        if (!Envy::get().isEjectReadyForRenderThread()) {
+            Envy::getConfigManager().saveCurrentConfig();
         }
 
-        Latite::getKeyboard().~Keyboard();
-        Latite::getModuleManager().~ModuleManager();
-        Latite::getClientMessageQueue().~ClientMessageQueue();
-        Latite::getCommandManager().~CommandManager();
-        Latite::getSettings().~SettingGroup();
-        Latite::getHooks().~LatiteHooks();
-        Latite::getEventing().~Eventing();
-        Latite::getRenderer().~Renderer();
-        Latite::getAssets().~Assets();
-        Latite::getScreenManager().~ScreenManager();
-        Latite::getPluginManager().~PluginManager();
-        Latite::getNotifications().~Notifications();
-        Latite::get().~Latite();
-        LatiteTemp::cleanup();
+        Envy::getKeyboard().~Keyboard();
+        Envy::getModuleManager().~ModuleManager();
+        Envy::getClientMessageQueue().~ClientMessageQueue();
+        Envy::getCommandManager().~CommandManager();
+        Envy::getSettings().~SettingGroup();
+        Envy::getHooks().~EnvyHooks();
+        Envy::getEventing().~Eventing();
+        Envy::getRenderer().~Renderer();
+        Envy::getAssets().~Assets();
+        Envy::getScreenManager().~ScreenManager();
+        Envy::getPluginManager().~PluginManager();
+        Envy::getNotifications().~Notifications();
+        Envy::get().~Envy();
+        EnvyTemp::cleanup();
 
         MH_Uninitialize();
 
         hasInjected = false;
-        Logger::Info("Latite Client detached.");
+        Logger::Info("Envy Client detached.");
 
-#ifdef LATITE_CRASH_REPORTING
+#ifdef ENVY_CRASH_REPORTING
         DebugExceptionHandler::Uninstall();
 #endif
     }
@@ -406,92 +415,92 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, // handle to DLL module
                     DWORD fdwReason,    // reason for calling function
                     LPVOID reserved)    // reserved
 {
-#ifdef LATITE_CRASH_REPORTING
+#ifdef ENVY_CRASH_REPORTING
     DllMainCall call { hinstDLL, fdwReason, reserved };
     return static_cast<BOOL>(DebugExceptionHandler::RunWithSehGuard(
         [](void* context) -> std::uintptr_t {
             auto* call = static_cast<DllMainCall*>(context);
             return DllMainImpl(call->hinstDLL, call->fdwReason, call->reserved);
         },
-        &call, "Caught SEH exception in Latite DllMain"));
+        &call, "Caught SEH exception in Envy DllMain"));
 #else
     return DllMainImpl(hinstDLL, fdwReason, reserved);
 #endif
 }
 
-Latite& Latite::get() noexcept {
-    return *std::launder(reinterpret_cast<Latite*>(latiteBuf));
+Envy& Envy::get() noexcept {
+    return *std::launder(reinterpret_cast<Envy*>(envyBuf));
 }
 
-ModuleManager& Latite::getModuleManager() noexcept {
+ModuleManager& Envy::getModuleManager() noexcept {
     return *std::launder(reinterpret_cast<ModuleManager*>(mmgrBuf));
 }
 
-CommandManager& Latite::getCommandManager() noexcept {
+CommandManager& Envy::getCommandManager() noexcept {
     return *std::launder(reinterpret_cast<CommandManager*>(commandMgrBuf));
 }
 
-ConfigManager& Latite::getConfigManager() noexcept {
+ConfigManager& Envy::getConfigManager() noexcept {
     return *std::launder(reinterpret_cast<ConfigManager*>(configMgrBuf));
 }
 
-ClientMessageQueue& Latite::getClientMessageQueue() noexcept {
+ClientMessageQueue& Envy::getClientMessageQueue() noexcept {
     return *std::launder(reinterpret_cast<ClientMessageQueue*>(messageSinkBuf));
 }
 
-SettingGroup& Latite::getSettings() noexcept {
+SettingGroup& Envy::getSettings() noexcept {
     return *std::launder(reinterpret_cast<SettingGroup*>(mainSettingGroup));
 }
 
-LatiteHooks& Latite::getHooks() noexcept {
-    return *std::launder(reinterpret_cast<LatiteHooks*>(hooks));
+EnvyHooks& Envy::getHooks() noexcept {
+    return *std::launder(reinterpret_cast<EnvyHooks*>(hooks));
 }
 
-Eventing& Latite::getEventing() noexcept {
+Eventing& Envy::getEventing() noexcept {
     return *std::launder(reinterpret_cast<Eventing*>(eventing));
 }
 
-Renderer& Latite::getRenderer() noexcept {
+Renderer& Envy::getRenderer() noexcept {
     return *std::launder(reinterpret_cast<Renderer*>(rendererBuf));
 }
 
-ScreenManager& Latite::getScreenManager() noexcept {
+ScreenManager& Envy::getScreenManager() noexcept {
     return *std::launder(reinterpret_cast<ScreenManager*>(scnMgrBuf));
 }
 
-Assets& Latite::getAssets() noexcept {
+Assets& Envy::getAssets() noexcept {
     return *std::launder(reinterpret_cast<Assets*>(assetsBuf));
 }
 
-PluginManager& Latite::getPluginManager() noexcept {
+PluginManager& Envy::getPluginManager() noexcept {
     return *std::launder(reinterpret_cast<PluginManager*>(scriptMgrBuf));
 }
 
-Keyboard& Latite::getKeyboard() noexcept {
+Keyboard& Envy::getKeyboard() noexcept {
     return *std::launder(reinterpret_cast<Keyboard*>(keyboardBuf));
 }
 
-Notifications& Latite::getNotifications() noexcept {
+Notifications& Envy::getNotifications() noexcept {
     return *std::launder(reinterpret_cast<Notifications*>(notificaitonsBuf));
 }
 
-std::optional<float> Latite::getMenuBlur() {
+std::optional<float> Envy::getMenuBlur() {
     if (std::get<BoolValue>(this->menuBlurEnabled)) {
         return std::get<FloatValue>(this->menuBlur);
     }
     return std::nullopt;
 }
 
-std::vector<std::string> Latite::getLatiteUsers() {
-    return latiteUsers;
+std::vector<std::string> Envy::getEnvyUsers() {
+    return envyUsers;
 }
 
-int Latite::getSelectedLanguage() {
+int Envy::getSelectedLanguage() {
     if (!l10nData) return 0;
     return l10nData->resolveLanguageSetting(clientLanguage.getSelectedKey());
 }
 
-void Latite::queueEject() noexcept {
+void Envy::queueEject() noexcept {
     // auto app = winrt::Windows::UI::ViewManagement::ApplicationView::GetForCurrentView();
     // app.Title(L"");
     SetWindowTextW(SDK::GameCore::get()->hwnd, L"Minecraft");
@@ -500,34 +509,34 @@ void Latite::queueEject() noexcept {
     }
 }
 
-bool Latite::isEjectQueued() const noexcept {
+bool Envy::isEjectQueued() const noexcept {
     return this->shouldEject.load(std::memory_order_acquire);
 }
 
-bool Latite::isEjectReadyForRenderThread() const noexcept {
+bool Envy::isEjectReadyForRenderThread() const noexcept {
     return this->shouldEject.load(std::memory_order_acquire) &&
            this->mainThreadEjectCleanupComplete.load(std::memory_order_acquire);
 }
 
-void Latite::completeEjectFromRenderThread() noexcept {
+void Envy::completeEjectFromRenderThread() noexcept {
     if (!this->isEjectReadyForRenderThread()) {
         return;
     }
 
-    if (Latite::getRenderer().hasInitialized()) {
+    if (Envy::getRenderer().hasInitialized()) {
         this->releaseDeferredD2DResources();
-        Latite::getAssets().unloadAll();
-        Latite::getRenderer().shutdownForEject();
+        Envy::getAssets().unloadAll();
+        Envy::getRenderer().shutdownForEject();
     }
 
-    Latite::getHooks().disable();
+    Envy::getHooks().disable();
 
     if (!this->unloadStarted.exchange(true, std::memory_order_acq_rel)) {
         CloseHandle(CreateThread(nullptr, 0, ejectThread, dllInst, 0, nullptr));
     }
 }
 
-SDK::Font* Latite::getFont() {
+SDK::Font* Envy::getFont() {
     switch (this->mcRendFont.getSelectedKey()) {
     case 0:
         return SDK::ClientInstance::get()->minecraftGame->getFontRepository()->getMinecraftFont();
@@ -539,29 +548,29 @@ SDK::Font* Latite::getFont() {
     }
 }
 
-void Latite::initialize(HINSTANCE hInst) {
+void Envy::initialize(HINSTANCE hInst) {
     this->dllInst = hInst;
 
     if (!controllerInput.start()) {
         Logger::Warn("Controller keybind input could not be initialized.");
     }
 
-    Latite::getPluginManager().init();
+    Envy::getPluginManager().init();
     Logger::Info("Script manager initialized.");
 
-    Latite::getEventing().listen<UpdateEvent, &Latite::onUpdate>(this, 2);
-    Latite::getEventing().listen<KeyUpdateEvent, &Latite::onKey>(this, 2);
-    Latite::getEventing().listen<RendererInitEvent, &Latite::onRendererInit>(this, 2);
-    Latite::getEventing().listen<RendererCleanupEvent, &Latite::onRendererCleanup>(this, 2);
-    Latite::getEventing().listen<AppSuspendedEvent, &Latite::onSuspended>(this, 2);
-    Latite::getEventing().listen<CharEvent, &Latite::onChar>(this, 2);
-    Latite::getEventing().listen<ClickEvent, &Latite::onClick>(this, 2);
-    Latite::getEventing().listen<BobMovementEvent, &Latite::onBobView>(this, 2);
-    Latite::getEventing().listen<LeaveGameEvent, &Latite::onLeaveGame>(this, 2);
-    Latite::getEventing().listen<RenderLayerEvent, &Latite::onRenderLayer>(this, 2);
-    Latite::getEventing().listen<RenderOverlayEvent, &Latite::onRenderOverlay>(this, 2);
-    Latite::getEventing().listen<TickEvent, &Latite::onTick>(this, 2);
-    Latite::getEventing().listen<MouseReleaseEvent, &Latite::onMouseRelease>(this, 2);
+    Envy::getEventing().listen<UpdateEvent, &Envy::onUpdate>(this, 2);
+    Envy::getEventing().listen<KeyUpdateEvent, &Envy::onKey>(this, 2);
+    Envy::getEventing().listen<RendererInitEvent, &Envy::onRendererInit>(this, 2);
+    Envy::getEventing().listen<RendererCleanupEvent, &Envy::onRendererCleanup>(this, 2);
+    Envy::getEventing().listen<AppSuspendedEvent, &Envy::onSuspended>(this, 2);
+    Envy::getEventing().listen<CharEvent, &Envy::onChar>(this, 2);
+    Envy::getEventing().listen<ClickEvent, &Envy::onClick>(this, 2);
+    Envy::getEventing().listen<BobMovementEvent, &Envy::onBobView>(this, 2);
+    Envy::getEventing().listen<LeaveGameEvent, &Envy::onLeaveGame>(this, 2);
+    Envy::getEventing().listen<RenderLayerEvent, &Envy::onRenderLayer>(this, 2);
+    Envy::getEventing().listen<RenderOverlayEvent, &Envy::onRenderOverlay>(this, 2);
+    Envy::getEventing().listen<TickEvent, &Envy::onTick>(this, 2);
+    Envy::getEventing().listen<MouseReleaseEvent, &Envy::onMouseRelease>(this, 2);
 
     Logger::Info("Initialized Hooks");
     getHooks().enable();
@@ -573,41 +582,41 @@ void Latite::initialize(HINSTANCE hInst) {
     //}
 }
 
-void Latite::threadsafeInit() {
+void Envy::threadsafeInit() {
     this->gameThreadId = std::this_thread::get_id();
-    // TODO: latite beta only
+    // TODO: envy beta only
     // if (SDK::ClientInstance::get()->minecraftGame->xuid.size() > 0) wnd->postXUID();
 
     // auto app = winrt::Windows::UI::ViewManagement::ApplicationView::GetForCurrentView();
     std::string vstr(this->version);
 
-#if defined(LATITE_NIGHTLY)
-    auto ws = util::StrToWStr("Latite Client [NIGHTLY] " + gameVersion + " " + vstr + "/" + getBuildTimestamp());
-#elif defined(LATITE_DEBUG)
-    auto ws = util::StrToWStr("Latite Client [DEBUG] " + gameVersion + " " + vstr + "/" + getBuildTimestamp());
+#if defined(ENVY_NIGHTLY)
+    auto ws = util::StrToWStr("Envy Client [NIGHTLY] " + gameVersion + " " + vstr + "/" + getBuildTimestamp());
+#elif defined(ENVY_DEBUG)
+    auto ws = util::StrToWStr("Envy Client [DEBUG] " + gameVersion + " " + vstr + "/" + getBuildTimestamp());
 #else
-    auto ws = util::StrToWStr("Latite Client " + vstr);
+    auto ws = util::StrToWStr("Envy Client " + vstr);
 #endif
 
     // app.Title(ws);
     SetWindowTextW(SDK::GameCore::get()->hwnd, ws.c_str());
-    Latite::getPluginManager().loadPrerunScripts();
+    Envy::getPluginManager().loadPrerunScripts();
     Logger::Info("Loaded startup scripts");
 
-    Latite::getConfigManager().applyModuleConfig();
+    Envy::getConfigManager().applyModuleConfig();
 
-    Latite::getRenderer().setShouldInit();
+    Envy::getRenderer().setShouldInit();
 
-    Latite::getCommandManager().prefix = Latite::get().getCommandPrefix();
-    Latite::getNotifications().push(LocalizeString::get("client.intro.welcome"));
-    Latite::getNotifications().push(
+    Envy::getCommandManager().prefix = Envy::get().getCommandPrefix();
+    Envy::getNotifications().push(LocalizeString::get("client.intro.welcome"));
+    Envy::getNotifications().push(
         util::FormatWString(LocalizeString::get("client.intro.menubutton"),
-                            { util::StrToWStr(util::KeyToString(Latite::get().getMenuKey().value)) }));
+                            { util::StrToWStr(util::KeyToString(Envy::get().getMenuKey().value)) }));
 }
 
 static void setModuleBlocked(std::string_view moduleName, bool shouldBlock) {
     std::vector<std::wstring> blockedList;
-    Latite::getModuleManager().forEach([&](std::shared_ptr<Module> mod) {
+    Envy::getModuleManager().forEach([&](std::shared_ptr<Module> mod) {
         if (mod->name() == moduleName && mod->isBlocked() != shouldBlock) {
             if (shouldBlock) {
                 blockedList.push_back(mod->getDisplayName());
@@ -624,12 +633,12 @@ static void setModuleBlocked(std::string_view moduleName, bool shouldBlock) {
                 str += L", ";
             }
         }
-        Latite::getNotifications().push(
+        Envy::getNotifications().push(
             util::FormatWString(LocalizeString::get("client.modules.blockedOnServer.name"), { str }));
     }
 }
 
-void Latite::updateModuleBlocking() {
+void Envy::updateModuleBlocking() {
     auto* connectionInfo = SDK::RemoteConnectorComposite::getConnectionInfo();
     const auto* server = ServerDetection::identify(connectionInfo);
     const bool isHiveOrGalaxite =
@@ -642,15 +651,15 @@ void Latite::updateModuleBlocking() {
     setModuleBlocked("Gyro", isCubeCraft);
 }
 
-std::string Latite::getBuildTimestamp() {
-#if defined(LATITE_BUILD_TIMESTAMP)
-    return LATITE_BUILD_TIMESTAMP;
+std::string Envy::getBuildTimestamp() {
+#if defined(ENVY_BUILD_TIMESTAMP)
+    return ENVY_BUILD_TIMESTAMP;
 #else
-    return LatiteBuild::getTimestamp();
+    return EnvyBuild::getTimestamp();
 #endif
 }
 
-std::wstring Latite::GetCurrentModuleFilePath(HMODULE hModule) {
+std::wstring Envy::GetCurrentModuleFilePath(HMODULE hModule) {
     std::vector<wchar_t> buffer(MAX_PATH);
 
     DWORD result = GetModuleFileNameW(hModule, buffer.data(), static_cast<DWORD>(buffer.size()));
@@ -668,13 +677,13 @@ std::wstring Latite::GetCurrentModuleFilePath(HMODULE hModule) {
     return std::wstring(L"couldn't get file path");
 }
 
-void Latite::initSettings() {
+void Envy::initSettings() {
     {
         auto set = std::make_shared<Setting>("menuKey", LocalizeString::get("client.settings.menuKey.name"),
                                              LocalizeString::get("client.settings.menuKey.desc"));
         set->value = &this->menuKey;
         set->callback = [this](Setting& set) {
-            Latite::getScreenManager().get<ClickGUI>().key = this->getMenuKey();
+            Envy::getScreenManager().get<ClickGUI>().key = this->getMenuKey();
         };
         this->getSettings().addSetting(set);
     }
@@ -749,7 +758,7 @@ void Latite::initSettings() {
         this->getSettings().addSetting(set);
     }
 
-#ifdef LATITE_DEBUG
+#ifdef ENVY_DEBUG
     {
         auto set = std::make_shared<Setting>("debugTextRects", L"Debug Text Rects",
                                              L"Draw text bounds and highlight likely text overflow.");
@@ -779,8 +788,8 @@ void Latite::initSettings() {
     }
 
     {
-        // auto set = std::make_shared<Setting>("broadcastClientUsage", "Latite Client Presence", "If you leave this on,
-        // others with Latite will see that you are using Latite and you will see other people who use Latite.");
+        // auto set = std::make_shared<Setting>("broadcastClientUsage", "Envy Client Presence", "If you leave this on,
+        // others with Envy will see that you are using Envy and you will see other people who use Envy.");
         // set->value = &this->broadcastUsage;
         // this->getSettings().addSetting(set);
     }
@@ -812,22 +821,22 @@ void Latite::initSettings() {
     }
 }
 
-void Latite::queueForUIRender(std::function<void(SDK::MinecraftUIRenderContext* ctx)> callback) {
+void Envy::queueForUIRender(std::function<void(SDK::MinecraftUIRenderContext* ctx)> callback) {
     if (isEjectQueued()) return;
     this->uiRenderQueue.push(callback);
 }
 
-void Latite::queueForClientThread(std::function<void()> callback) {
+void Envy::queueForClientThread(std::function<void()> callback) {
     if (isEjectQueued()) return;
     this->clientThreadQueue.push(callback);
 }
 
-void Latite::queueForDXRender(std::function<void(ID2D1DeviceContext* ctx)> callback) {
+void Envy::queueForDXRender(std::function<void(ID2D1DeviceContext* ctx)> callback) {
     if (isEjectQueued()) return;
     this->dxRenderQueue.push(callback);
 }
 
-void Latite::deferD2DResourceRelease(IUnknown* resource) noexcept {
+void Envy::deferD2DResourceRelease(IUnknown* resource) noexcept {
     if (!resource) {
         return;
     }
@@ -836,7 +845,7 @@ void Latite::deferD2DResourceRelease(IUnknown* resource) noexcept {
     this->deferredD2DReleases.push_back(resource);
 }
 
-void Latite::releaseDeferredD2DResources() noexcept {
+void Envy::releaseDeferredD2DResources() noexcept {
     std::vector<IUnknown*> resources;
     {
         std::lock_guard lock(this->deferredD2DReleaseMutex);
@@ -848,7 +857,7 @@ void Latite::releaseDeferredD2DResources() noexcept {
     }
 }
 
-void Latite::initL10n() {
+void Envy::initL10n() {
     l10nData = LocalizeData();
 }
 
@@ -856,10 +865,10 @@ namespace {
     winrt::Windows::Foundation::IAsyncAction doDownloadAssets() {
         auto http = HttpClient();
 
-        auto folderPath = util::GetLatitePath() / "Assets";
+        auto folderPath = util::GetEnvyPath() / "Assets";
 
         winrt::Windows::Foundation::Uri requestUri(
-            util::StrToWStr("https://raw.githubusercontent.com/Imrglop/Latite-Releases/main/bin/ChakraCore.dll"));
+            util::StrToWStr("https://raw.githubusercontent.com/Imrglop/Envy-Releases/main/bin/ChakraCore.dll"));
 
         auto buffer = co_await http.GetBufferAsync(requestUri);
 
@@ -877,20 +886,20 @@ namespace {
     }
 }
 
-void Latite::downloadChakraCore() {
+void Envy::downloadChakraCore() {
     if (!downloadingAssets) {
         this->downloadingAssets = true;
         doDownloadAssets();
     }
 }
 
-void Latite::initLanguageSetting() {
+void Envy::initLanguageSetting() {
     auto set = std::make_shared<Setting>("language", LocalizeString::get("client.settings.language.name"),
                                          LocalizeString::get("client.settings.language.desc"));
     set->enumData = &this->clientLanguage;
     set->value = set->enumData->getValue();
     set->userUpdateCallback = [](Setting&) {
-        Latite::get().onLanguageChanged();
+        Envy::get().onLanguageChanged();
     };
 
     set->enumData->addEntry({ LocalizeData::systemDefaultLanguageSettingValue,
@@ -903,20 +912,20 @@ void Latite::initLanguageSetting() {
     this->getSettings().addSetting(set);
 }
 
-void Latite::onLanguageChanged() {
-    Latite::getRenderer().refreshTextFormats();
-    Latite::getSettings().refreshLocalization();
+void Envy::onLanguageChanged() {
+    Envy::getRenderer().refreshTextFormats();
+    Envy::getSettings().refreshLocalization();
 
-    Latite::getModuleManager().forEach([](std::shared_ptr<Module> mod) {
+    Envy::getModuleManager().forEach([](std::shared_ptr<Module> mod) {
         mod->refreshLocalization();
     });
 
-    Latite::getCommandManager().refreshLocalization();
-    Latite::getScreenManager().get<ClickGUI>().requestModuleListRebuild();
-    Latite::getScreenManager().get<ClickGUI>().refreshLocalization();
+    Envy::getCommandManager().refreshLocalization();
+    Envy::getScreenManager().get<ClickGUI>().requestModuleListRebuild();
+    Envy::getScreenManager().get<ClickGUI>().refreshLocalization();
 }
 
-void Latite::onUpdate(Event& evGeneric) {
+void Envy::onUpdate(Event& evGeneric) {
     auto& ev = reinterpret_cast<UpdateEvent&>(evGeneric);
     timings.update();
     auto now = std::chrono::system_clock::now();
@@ -924,15 +933,15 @@ void Latite::onUpdate(Event& evGeneric) {
 
     if (this->shouldEject.load(std::memory_order_acquire)) {
         if (!this->mainThreadEjectCleanupComplete.load(std::memory_order_acquire)) {
-            Latite::getScreenManager().shutdownForEject();
-            Latite::getConfigManager().saveCurrentConfig();
-            Latite::getModuleManager().shutdownForEject();
-            Latite::getPluginManager().unloadAll();
+            Envy::getScreenManager().shutdownForEject();
+            Envy::getConfigManager().saveCurrentConfig();
+            Envy::getModuleManager().shutdownForEject();
+            Envy::getPluginManager().unloadAll();
             this->controllerInput.stop();
             this->mainThreadEjectCleanupComplete.store(true, std::memory_order_release);
         }
 
-        if (!Latite::getRenderer().hasInitialized()) {
+        if (!Envy::getRenderer().hasInitialized()) {
             this->completeEjectFromRenderThread();
         }
         return;
@@ -960,7 +969,7 @@ void Latite::onUpdate(Event& evGeneric) {
         SetCursorPos((r.left + r.right) / 2, (r.top + r.bottom) / 2);
     }
 
-    latiteUsers = latiteUsersDirty;
+    envyUsers = envyUsersDirty;
 
     if (!hasInit) {
         threadsafeInit();
@@ -968,15 +977,15 @@ void Latite::onUpdate(Event& evGeneric) {
     }
     controllerInput.update();
     getKeyboard().findTextInput();
-    Latite::getPluginManager().runScriptingOperations();
+    Envy::getPluginManager().runScriptingOperations();
 
     static bool lastDX11 = std::get<BoolValue>(this->useDX11);
     if (std::get<BoolValue>(useDX11) != lastDX11) {
         if (lastDX11) {
-            Latite::getClientMessageQueue().display(
+            Envy::getClientMessageQueue().display(
                 util::WFormat(LocalizeString::get("client.settings.dx11EnabledMsg.name")));
         } else {
-            Latite::getRenderer().setShouldReinit();
+            Envy::getRenderer().setShouldReinit();
         }
         lastDX11 = std::get<BoolValue>(useDX11);
     }
@@ -987,7 +996,7 @@ void Latite::onUpdate(Event& evGeneric) {
     }
 }
 
-void Latite::onKey(Event& evGeneric) {
+void Envy::onKey(Event& evGeneric) {
     auto& ev = reinterpret_cast<KeyUpdateEvent&>(evGeneric);
     if (ev.getKey() == std::get<KeyValue>(ejectKey) && ev.isDown()) {
         this->queueEject();
@@ -1006,12 +1015,12 @@ void Latite::onKey(Event& evGeneric) {
     }
 }
 
-void Latite::onClick(Event& evGeneric) {
+void Envy::onClick(Event& evGeneric) {
     auto& ev = reinterpret_cast<ClickEvent&>(evGeneric);
     timings.onClick(ev.getMouseButton(), ev.isDown());
 }
 
-void Latite::onChar(Event& evGeneric) {
+void Envy::onChar(Event& evGeneric) {
     auto& ev = reinterpret_cast<CharEvent&>(evGeneric);
     for (auto tb : textBoxes) {
         if (tb->isSelected()) {
@@ -1038,7 +1047,7 @@ void Latite::onChar(Event& evGeneric) {
     }
 }
 
-void Latite::onRendererInit(Event&) {
+void Envy::onRendererInit(Event&) {
     getAssets().unloadAll(); // should be safe even if we didn't load resources yet
     getAssets().loadAll();
 
@@ -1054,28 +1063,28 @@ void Latite::onRendererInit(Event&) {
     getRenderer().getDeviceContext()->CreateBitmapBrush(hudBlurBitmap.Get(), this->hudBlurBrush.GetAddressOf());
 }
 
-void Latite::onRendererCleanup(Event& ev) {
+void Envy::onRendererCleanup(Event& ev) {
     this->hudBlurBitmap = nullptr;
     this->gaussianBlurEffect = nullptr;
     this->hudBlurBrush = nullptr;
 }
 
-void Latite::onSuspended(Event& ev) {
-    Latite::getConfigManager().saveCurrentConfig();
+void Envy::onSuspended(Event& ev) {
+    Envy::getConfigManager().saveCurrentConfig();
     Logger::Info("Saved config");
 }
 
-void Latite::onBobView(Event& ev) {
+void Envy::onBobView(Event& ev) {
     if (std::get<BoolValue>(this->minimalViewBob)) {
         reinterpret_cast<Cancellable&>(ev).setCancelled(true);
     }
 }
 
-void Latite::onLeaveGame(Event& ev) {
+void Envy::onLeaveGame(Event& ev) {
     getRenderer().clearTextCache();
 }
 
-void Latite::onRenderLayer(Event& evG) {
+void Envy::onRenderLayer(Event& evG) {
     if (isEjectQueued()) return;
 
     auto& ev = reinterpret_cast<RenderLayerEvent&>(evG);
@@ -1086,7 +1095,7 @@ void Latite::onRenderLayer(Event& evG) {
     }
 }
 
-void Latite::onRenderOverlay(Event& evG) {
+void Envy::onRenderOverlay(Event& evG) {
     if (isEjectQueued()) return;
 
     auto& ev = reinterpret_cast<RenderOverlayEvent&>(evG);
@@ -1104,16 +1113,16 @@ void Latite::onRenderOverlay(Event& evG) {
     }
 }
 
-void Latite::onPacketReceive(Event& evG) {
+void Envy::onPacketReceive(Event& evG) {
     // disabled
     auto& ev = reinterpret_cast<PacketReceiveEvent&>(evG);
 }
 
-void Latite::onTick(Event& ev) {
+void Envy::onTick(Event& ev) {
     updateModuleBlocking();
 }
 
-void Latite::onMouseRelease(Event& ev) {
+void Envy::onMouseRelease(Event& ev) {
     if (std::get<BoolValue>(centerCursorMenus)) {
         RECT r = { 0, 0, 0, 0 };
         GetClientRect(SDK::GameCore::get()->hwnd, &r);
@@ -1121,7 +1130,7 @@ void Latite::onMouseRelease(Event& ev) {
     }
 }
 
-void Latite::loadLanguageConfig(std::shared_ptr<Setting> languageSetting) {
+void Envy::loadLanguageConfig(std::shared_ptr<Setting> languageSetting) {
     this->getSettings().forEach([&](std::shared_ptr<Setting> set) {
         if (set->name() == languageSetting->name()) {
             std::visit(
@@ -1134,7 +1143,7 @@ void Latite::loadLanguageConfig(std::shared_ptr<Setting> languageSetting) {
     });
 }
 
-void Latite::loadConfig(SettingGroup& gr) {
+void Envy::loadConfig(SettingGroup& gr) {
     gr.forEach([&](std::shared_ptr<Setting> set) {
         this->getSettings().forEach([&](std::shared_ptr<Setting> modSet) {
             if (modSet->name() == set->name()) {

@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "ExceptionHandler.h"
 
-#ifdef LATITE_CRASH_REPORTING
+#ifdef ENVY_CRASH_REPORTING
 #include "util/Util.h"
 
 #include <atomic>
@@ -120,7 +120,7 @@ namespace {
         return oss.str();
     }
 
-    constexpr std::string_view crashReportTitle = "Latite Client Crash Report";
+    constexpr std::string_view crashReportTitle = "Envy Client Crash Report";
     constexpr size_t crashReportWidth = 75;
 
     std::string MakeCenteredDivider(std::string_view title, char fill, size_t width) {
@@ -145,7 +145,7 @@ namespace {
     }
 
     std::filesystem::path LogsPath() {
-        return util::GetLatitePath() / "Logs";
+        return util::GetEnvyPath() / "Logs";
     }
 
     std::filesystem::path CrashPath() {
@@ -158,7 +158,7 @@ namespace {
         localtime_s(&now, &t);
 
         std::ostringstream oss;
-        oss << "LatiteRecode-" << std::put_time(&now, "%Y-%m-%d") << ".log";
+        oss << "EnvyRecode-" << std::put_time(&now, "%Y-%m-%d") << ".log";
         return LogsPath() / oss.str();
     }
 
@@ -183,10 +183,10 @@ namespace {
         } catch (...) {}
     }
 
-    HMODULE GetLatiteModule() {
+    HMODULE GetEnvyModule() {
         HMODULE module = nullptr;
         GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-                           reinterpret_cast<LPCWSTR>(&GetLatiteModule), &module);
+                           reinterpret_cast<LPCWSTR>(&GetEnvyModule), &module);
 
         return module;
     }
@@ -230,9 +230,9 @@ namespace {
     std::wstring BuildSymbolPath() {
         std::wstring symbolPath;
 
-        auto latiteModulePath = GetModuleFilePath(GetLatiteModule());
-        AddSymbolPathPart(symbolPath, latiteModulePath.parent_path());
-        AddSymbolPathPart(symbolPath, util::GetLatitePath());
+        auto envyModulePath = GetModuleFilePath(GetEnvyModule());
+        AddSymbolPathPart(symbolPath, envyModulePath.parent_path());
+        AddSymbolPathPart(symbolPath, util::GetEnvyPath());
         AddSymbolPathPart(symbolPath, CrashPath());
 
         wchar_t currentDirectory[MAX_PATH] = {};
@@ -254,8 +254,8 @@ namespace {
         return symbolPath;
     }
 
-    void EnsureLatiteModuleLoaded(HANDLE process) {
-        auto module = GetLatiteModule();
+    void EnsureEnvyModuleLoaded(HANDLE process) {
+        auto module = GetEnvyModule();
         auto modulePath = GetModuleFilePath(module);
         if (!module || modulePath.empty()) {
             return;
@@ -286,18 +286,18 @@ namespace {
         if (SymInitializeW(process, symbolPath.empty() ? nullptr : symbolPath.c_str(), TRUE)) {
             symbolsInitialized = true;
             ownsSymbolHandler = true;
-            EnsureLatiteModuleLoaded(process);
+            EnsureEnvyModuleLoaded(process);
             return true;
         }
 
         DWORD error = GetLastError();
         if (error == ERROR_INVALID_PARAMETER) {
             // DbgHelp is process-global. If something else initialized it first,
-            // keep using that session and update the search path for LatiteDebug.pdb.
+            // keep using that session and update the search path for EnvyDebug.pdb.
             SymSetSearchPathW(process, symbolPath.c_str());
             symbolsInitialized = true;
             ownsSymbolHandler = false;
-            EnsureLatiteModuleLoaded(process);
+            EnsureEnvyModuleLoaded(process);
             return true;
         }
 
@@ -378,7 +378,7 @@ namespace {
         stackFrame.AddrFrame.Offset = context.Ebp;
         stackFrame.AddrStack.Offset = context.Esp;
 #else
-#error Unsupported architecture for LatiteDebug stack traces.
+#error Unsupported architecture for EnvyDebug stack traces.
 #endif
 
         stackFrame.AddrPC.Mode = AddrModeFlat;
@@ -505,7 +505,7 @@ namespace {
 
         try {
             DebugExceptionHandler::WriteCrashReport(exceptionInfo,
-                                                    reason ? reason : "Caught SEH exception at Latite native boundary");
+                                                    reason ? reason : "Caught SEH exception at Envy native boundary");
         } catch (...) {}
 
         return EXCEPTION_EXECUTE_HANDLER;
@@ -701,15 +701,15 @@ std::filesystem::path DebugExceptionHandler::WriteCrashReport(EXCEPTION_POINTERS
         RtlCaptureContext(&context);
     }
 
-#if defined(LATITE_NIGHTLY)
+#if defined(ENVY_NIGHTLY)
     std::string baseName =
-        std::format("LatiteNightlyCrash-{}", MakeTimestamp(true), GetCurrentProcessId(), GetCurrentThreadId());
-#elif defined(LATITE_DEBUG)
+        std::format("EnvyNightlyCrash-{}", MakeTimestamp(true), GetCurrentProcessId(), GetCurrentThreadId());
+#elif defined(ENVY_DEBUG)
     std::string baseName =
-        std::format("LatiteDebugCrash-{}", MakeTimestamp(true), GetCurrentProcessId(), GetCurrentThreadId());
+        std::format("EnvyDebugCrash-{}", MakeTimestamp(true), GetCurrentProcessId(), GetCurrentThreadId());
 #else
     std::string baseName =
-        std::format("LatiteCrash-{}", MakeTimestamp(true), GetCurrentProcessId(), GetCurrentThreadId());
+        std::format("EnvyCrash-{}", MakeTimestamp(true), GetCurrentProcessId(), GetCurrentThreadId());
 #endif
 
     auto attemptedDumpPath = CrashPath() / (baseName + ".dmp");
@@ -732,9 +732,9 @@ std::filesystem::path DebugExceptionHandler::WriteCrashReport(EXCEPTION_POINTERS
                << "\n";
     }
 
-    auto latiteModulePath = GetModuleFilePath(GetLatiteModule());
-    if (!latiteModulePath.empty()) {
-        report << "Latite Module: " << PathToUtf8(latiteModulePath) << "\n";
+    auto envyModulePath = GetModuleFilePath(GetEnvyModule());
+    if (!envyModulePath.empty()) {
+        report << "Envy Module: " << PathToUtf8(envyModulePath) << "\n";
     }
 
     report << "Minidump: attempting " << PathToUtf8(attemptedDumpPath) << "\n";
@@ -809,7 +809,7 @@ void LogExceptionDetails(const std::exception& e) {
     g_bHasCxxExceptionContext = false;
 
     DebugExceptionHandler::WriteCrashReport(&exceptionInfo,
-                                            std::format("Caught C++ exception at Latite error boundary: {}", e.what()));
+                                            std::format("Caught C++ exception at Envy error boundary: {}", e.what()));
 }
 
 #endif

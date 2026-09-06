@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "ConfigCommand.h"
 #include "client/config/ConfigManager.h"
-#include "client/Latite.h"
+#include "client/Envy.h"
 
 ConfigCommand::ConfigCommand()
     : Command("config", LocalizeString::get("client.commands.config.desc"), "$ load <name>\n$ save [name]",
@@ -12,13 +12,13 @@ bool ConfigCommand::execute(std::string const label, std::vector<std::string> ar
     if (args.empty()) return false;
     if (args[0] == "save") {
         if (args.size() < 2) {
-            if (Latite::getConfigManager().saveCurrentConfig())
+            if (Envy::getConfigManager().saveCurrentConfig())
                 message(LocalizeString::get("client.commands.config.savedConfig.name"));
             else
                 message(LocalizeString::get("client.commands.config.genericError.name"), true);
             return true;
         }
-        if (Latite::getConfigManager().saveTo(util::StrToWStr(args[1]))) {
+        if (Envy::getConfigManager().saveTo(util::StrToWStr(args[1]))) {
             message(
                 util::FormatWString(util::WFormat(LocalizeString::get("client.commands.config.savedConfigPath.name")),
                                     { util::StrToWStr(args[1]) }));
@@ -31,20 +31,20 @@ bool ConfigCommand::execute(std::string const label, std::vector<std::string> ar
             return false;
         }
 
-        if (!Latite::getConfigManager().saveCurrentConfig()) {
+        if (!Envy::getConfigManager().saveCurrentConfig()) {
             message(LocalizeString::get("client.commands.config.saveDuringLoadingError.name"), true);
             return true;
         }
 
-        if (!Latite::getConfigManager().loadUserConfig(util::StrToWStr(args[1]))) {
+        if (!Envy::getConfigManager().loadUserConfig(util::StrToWStr(args[1]))) {
             message(
                 util::FormatWString(util::WFormat(LocalizeString::get("client.commands.config.configNotFound.name")),
                                     { util::StrToWStr(args[1]) }),
                 true);
             return true;
         }
-        Latite::getConfigManager().applyGlobalConfig();
-        Latite::getConfigManager().applyModuleConfig();
+        Envy::getConfigManager().applyGlobalConfig();
+        Envy::getConfigManager().applyModuleConfig();
         message(util::FormatWString(util::WFormat(LocalizeString::get("client.commands.config.loadedConfig.name")),
                                     { util::StrToWStr(args[1]) }));
         return true;

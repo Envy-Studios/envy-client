@@ -4,7 +4,7 @@
 #include "client/event/events/RenderOverlayEvent.h"
 #include "client/event/events/RendererCleanupEvent.h"
 #include "client/event/events/RendererInitEvent.h"
-#include "client/Latite.h"
+#include "client/Envy.h"
 
 namespace {
     const char* commandQueueTypeName(D3D12_COMMAND_LIST_TYPE type) noexcept {
@@ -37,8 +37,8 @@ namespace {
 
     std::wstring selectedTextLocale() {
         try {
-            auto const& languages = Latite::get().getL10nData().getLanguages();
-            int selectedLanguage = Latite::get().getSelectedLanguage();
+            auto const& languages = Envy::get().getL10nData().getLanguages();
+            int selectedLanguage = Envy::get().getSelectedLanguage();
             if (selectedLanguage >= 0 && selectedLanguage < static_cast<int>(languages.size())) {
                 return util::StrToWStr(languages[selectedLanguage]->langCode);
             }
@@ -49,7 +49,7 @@ namespace {
 
     DWRITE_READING_DIRECTION selectedTextReadingDirection() {
         try {
-            return Latite::get().getL10nData().isSelectedLanguageRightToLeft() ? DWRITE_READING_DIRECTION_RIGHT_TO_LEFT
+            return Envy::get().getL10nData().isSelectedLanguageRightToLeft() ? DWRITE_READING_DIRECTION_RIGHT_TO_LEFT
                                                                                : DWRITE_READING_DIRECTION_LEFT_TO_RIGHT;
         } catch (...) {
             return DWRITE_READING_DIRECTION_LEFT_TO_RIGHT;
@@ -117,7 +117,7 @@ bool Renderer::init(IDXGISwapChain* chain) {
         }
     }
 
-    const bool forceDX11 = Latite::get().shouldForceDX11();
+    const bool forceDX11 = Envy::get().shouldForceDX11();
     ComPtr<ID3D12Device> detectedDevice12;
     HRESULT device12Hr = chain->GetDevice(IID_PPV_ARGS(&detectedDevice12));
     if (SUCCEEDED(device12Hr) && detectedDevice12) {
@@ -194,7 +194,7 @@ bool Renderer::init(IDXGISwapChain* chain) {
         isDX11 = false;
         Logger::Info("Using DX12");
 
-#if LATITE_DEBUG
+#if ENVY_DEBUG
         ComPtr<ID3D12InfoQueue> infoQueue;
         if (SUCCEEDED(gameDevice12->QueryInterface(IID_PPV_ARGS(&infoQueue)))) {
             D3D12_MESSAGE_SEVERITY severities[] = {
@@ -230,13 +230,13 @@ bool Renderer::init(IDXGISwapChain* chain) {
         };
 
         UINT on12Flags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
-#ifdef LATITE_DEBUG
+#ifdef ENVY_DEBUG
         on12Flags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
         HRESULT on12Hr = createD3D11On12Device(on12Flags);
 
-#ifdef LATITE_DEBUG
+#ifdef ENVY_DEBUG
         if (on12Hr == DXGI_ERROR_SDK_COMPONENT_MISSING) {
             on12Flags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
             on12Hr = createD3D11On12Device(on12Flags);

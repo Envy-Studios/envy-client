@@ -7,7 +7,7 @@
 #include <string_view>
 #include <windows.h>
 
-#ifdef LATITE_CRASH_REPORTING
+#ifdef ENVY_CRASH_REPORTING
 
 extern __declspec(thread) CONTEXT g_CxxExceptionContext;
 extern __declspec(thread) bool g_bHasCxxExceptionContext;

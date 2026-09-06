@@ -13,12 +13,12 @@
 #include "hooks/PlayerHooks.h"
 #include "hooks/CustomSkinPickerHooks.h"
 
-class LatiteHooks final : public StaticManager<HookGroup, GenericHooks, LevelRendererHooks, OptionHooks, DXHooks,
+class EnvyHooks final : public StaticManager<HookGroup, GenericHooks, LevelRendererHooks, OptionHooks, DXHooks,
                                                PlayerHooks, MinecraftGameHooks, RenderControllerHooks, ScreenViewHooks,
                                                PacketHooks, CustomSkinPickerHooks> {
 public:
-    LatiteHooks();
-    ~LatiteHooks();
+    EnvyHooks();
+    ~EnvyHooks();
 
     void enable();
     void disable();

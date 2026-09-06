@@ -9,7 +9,7 @@
 #include "mc/common/world/Minecraft.h"
 #include "mc/common/world/level/BlockSource.h"
 
-#include "client/Latite.h"
+#include "client/Envy.h"
 #include <client/input/Keyboard.h>
 #include "client/script/PluginManager.h"
 #include "util/Logger.h"
@@ -24,7 +24,7 @@
 
 void GameScriptingObject::initialize(JsContextRef ctx, JsValueRef parentObj) {
     this->createWorldObject();
-    Chakra::SetPropertyString(object, L"version", util::StrToWStr(Latite::get().gameVersion));
+    Chakra::SetPropertyString(object, L"version", util::StrToWStr(Envy::get().gameVersion));
     Chakra::DefineFunc(object, getLocalPlayerCallback, L"getLocalPlayer");
     Chakra::DefineFunc(object, getMousePosCallback, L"getMousePos");
     Chakra::DefineFunc(object, getScreenSizeCallback, L"getScreenSize");
@@ -108,7 +108,7 @@ JsValueRef GameScriptingObject::worldGetEntList(JsValueRef callee, bool isConstr
 
     JsPlugin* scr = JsScript::getThis()->getPlugin();
 
-    if (!Latite::getPluginManager().hasPermission(scr, PluginManager::Permission::Operator)) {
+    if (!Envy::getPluginManager().hasPermission(scr, PluginManager::Permission::Operator)) {
         Chakra::ThrowError(L"No permission to use getEntityList here");
         return JS_INVALID_REFERENCE;
     }
@@ -185,7 +185,7 @@ JsValueRef GameScriptingObject::dimensionGetBlock(JsValueRef callee, bool isCons
     }
 
     JsScript* scr = JsScript::getThis();
-    if (!Latite::getPluginManager().hasPermission(scr->getPlugin(), PluginManager::Permission::Operator)) {
+    if (!Envy::getPluginManager().hasPermission(scr->getPlugin(), PluginManager::Permission::Operator)) {
         Chakra::ThrowError(L"No permission to use getBlock here");
         return JS_INVALID_REFERENCE;
     }
@@ -229,7 +229,7 @@ JsValueRef GameScriptingObject::getInputBinding(JsValueRef callee, bool isConstr
     if (!Chakra::VerifyArgCount(argCount, 2)) return JS_INVALID_REFERENCE;
     if (!Chakra::VerifyParameters({ { arguments[1], JsValueType::JsString } })) return JS_INVALID_REFERENCE;
 
-    auto key = Latite::getKeyboard().getMappedKey(util::WStrToStr(Chakra::GetString(arguments[1])));
+    auto key = Envy::getKeyboard().getMappedKey(util::WStrToStr(Chakra::GetString(arguments[1])));
     return Chakra::MakeInt(key);
 }
 
@@ -297,7 +297,7 @@ JsValueRef GameScriptingObject::isKeyDown(JsValueRef callee, bool isConstructor,
         return JS_INVALID_REFERENCE;
     }
 
-    return Latite::getKeyboard().isKeyDown(vKey) ? Chakra::GetTrue() : Chakra::GetFalse();
+    return Envy::getKeyboard().isKeyDown(vKey) ? Chakra::GetTrue() : Chakra::GetFalse();
 }
 
 JsValueRef GameScriptingObject::sendChatCallback(JsValueRef callee, bool isConstructor, JsValueRef* arguments,
@@ -307,7 +307,7 @@ JsValueRef GameScriptingObject::sendChatCallback(JsValueRef callee, bool isConst
 
     JsPlugin* script = JsScript::getThis()->getPlugin();
 
-    if (Latite::getPluginManager().hasPermission(script, PluginManager::Permission::SendChat) &&
+    if (Envy::getPluginManager().hasPermission(script, PluginManager::Permission::SendChat) &&
         Chakra::GetString(arguments[1]).size() < 250) {
         auto lp = SDK::ClientInstance::get()->getLocalPlayer();
         if (lp) {

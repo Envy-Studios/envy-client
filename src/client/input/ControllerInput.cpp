@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "ControllerInput.h"
 
-#include "client/Latite.h"
+#include "client/Envy.h"
 #include "client/event/Eventing.h"
 #include "client/event/events/KeyUpdateEvent.h"
 #include "client/input/Keyboard.h"
@@ -247,7 +247,7 @@ struct ControllerInput::Impl {
 
             int key = controller_input::keyFromButtonIndex(static_cast<int>(buttonIndex));
             bool isDown = (currentButtons & buttonMask) != 0;
-            Latite::getKeyboard().setControllerButtonState(key, isDown);
+            Envy::getKeyboard().setControllerButtonState(key, isDown);
 
             PluginManager::Event::Value downValue { L"isDown" };
             downValue.val = isDown;
@@ -256,7 +256,7 @@ struct ControllerInput::Impl {
             PluginManager::Event::Value keyCodeValue { L"keyCode" };
             keyCodeValue.val = static_cast<double>(key);
             PluginManager::Event scriptEvent { L"key-press", { downValue, characterValue, keyCodeValue }, true };
-            if (Latite::getPluginManager().dispatchEvent(scriptEvent)) continue;
+            if (Envy::getPluginManager().dispatchEvent(scriptEvent)) continue;
 
             KeyUpdateEvent event { key, isDown };
             Eventing::get().dispatch(event);

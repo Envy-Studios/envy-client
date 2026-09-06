@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "TabList.h"
-#include "client/Latite.h"
+#include "client/Envy.h"
 #include "client/event/events/RenderNameTagEvent.h"
 #include "client/event/events/RenderLayerEvent.h"
 #include "client/event/events/TickEvent.h"
@@ -64,7 +64,7 @@ TabList::PlayerHeadSkinKey TabList::makeSkinKey(SDK::SerializedSkinRef const& sk
 }
 
 std::string TabList::getRowName(SDK::PlayerListEntry& entry) const {
-    if (auto formattedName = Latite::get().getNameTagCache().getFormattedPlayerName(entry.name)) return *formattedName;
+    if (auto formattedName = Envy::get().getNameTagCache().getFormattedPlayerName(entry.name)) return *formattedName;
     return entry.name;
 }
 
@@ -97,7 +97,7 @@ bool TabList::refreshActivePlayerNames(SDK::Level* level) {
 }
 
 void TabList::syncNameTagCache(SDK::Level* level) {
-    auto& nameTags = Latite::get().getNameTagCache();
+    auto& nameTags = Envy::get().getNameTagCache();
     if (level) {
         for (auto* actor : level->getRuntimeActorList()) {
             if (!actor || !actor->isPlayer()) continue;
@@ -128,7 +128,7 @@ void TabList::rebuildRows(SDK::Level* level) {
         return;
     }
 
-    auto& nameTags = Latite::get().getNameTagCache();
+    auto& nameTags = Envy::get().getNameTagCache();
     cachedRows.reserve(level->getPlayerList()->size());
     for (auto& ent : *level->getPlayerList()) {
         CachedPlayerRow row {};
@@ -252,7 +252,7 @@ float TabList::getFloatOrDefault(ValueType const& value, float fallback) const {
 void TabList::onRenderNameTag(Event& evG) {
     RenderNameTagEvent& ev = static_cast<RenderNameTagEvent&>(evG);
     std::string* tag = ev.getNametag();
-    if (!tag || !Latite::get().getNameTagCache().hasFormatCode(*tag)) return;
+    if (!tag || !Envy::get().getNameTagCache().hasFormatCode(*tag)) return;
 
     SDK::ClientInstance* clientInstance = SDK::ClientInstance::get();
     if (!clientInstance || !clientInstance->minecraft) return;
@@ -263,7 +263,7 @@ void TabList::onRenderNameTag(Event& evG) {
     if (cachedActivePlayerNames.empty()) {
         refreshActivePlayerNames(level);
     }
-    if (Latite::get().getNameTagCache().recordRenderedNameTag(*tag, cachedActivePlayerNames)) {
+    if (Envy::get().getNameTagCache().recordRenderedNameTag(*tag, cachedActivePlayerNames)) {
         rowsDirty = true;
     }
 }
@@ -299,7 +299,7 @@ void TabList::onRenderLayer(Event& evG) {
     auto plr = SDK::ClientInstance::get()->getLocalPlayer();
     if (!plr) return;
 
-    MCDrawUtil dc { ev.getUIRenderContext(), Latite::get().getFont() };
+    MCDrawUtil dc { ev.getUIRenderContext(), Envy::get().getFont() };
     dc.setImmediate(false);
     auto lvl = SDK::ClientInstance::get()->minecraft->getLevel();
     if (!lvl || !lvl->getPlayerList()) return;

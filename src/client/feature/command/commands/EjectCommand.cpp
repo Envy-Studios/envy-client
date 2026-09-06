@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "EjectCommand.h"
-#include "client/Latite.h"
+#include "client/Envy.h"
 #include "client/misc/ClientMessageQueue.h"
 
 EjectCommand::EjectCommand()
@@ -9,6 +9,6 @@ EjectCommand::EjectCommand()
 
 bool EjectCommand::execute(std::string const label, std::vector<std::string> args) {
     message(LocalizeString::get("client.commands.eject.ejectMsg.name"));
-    Latite::get().queueEject();
+    Envy::get().queueEject();
     return true;
 }

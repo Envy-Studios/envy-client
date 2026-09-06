@@ -59,7 +59,7 @@
 #include "client/event/events/KeyUpdateEvent.h"
 
 ModuleManager::ModuleManager() {
-#ifdef LATITE_DEBUG
+#ifdef ENVY_DEBUG
     this->items.push_back(std::make_shared<TestModule>());
 #endif
     this->items.push_back(std::make_shared<Zoom>());

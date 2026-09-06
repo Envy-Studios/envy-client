@@ -1,13 +1,13 @@
 ﻿cmake_minimum_required(VERSION 3.22)
 
-project(Latite)
+project(Envy)
 
-set(LATITE_BUILD_TIMESTAMP "" CACHE STRING
-        "Optional fixed Latite build timestamp in YYYY-MM-DD_HH-mm-ssZ UTC format")
-if (LATITE_BUILD_TIMESTAMP AND NOT LATITE_BUILD_TIMESTAMP MATCHES
+set(ENVY_BUILD_TIMESTAMP "" CACHE STRING
+        "Optional fixed Envy build timestamp in YYYY-MM-DD_HH-mm-ssZ UTC format")
+if (ENVY_BUILD_TIMESTAMP AND NOT ENVY_BUILD_TIMESTAMP MATCHES
         "^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]-[0-9][0-9]-[0-9][0-9]Z$")
     message(FATAL_ERROR
-            "LATITE_BUILD_TIMESTAMP must use YYYY-MM-DD_HH-mm-ssZ UTC+0 format; got '${LATITE_BUILD_TIMESTAMP}'")
+            "ENVY_BUILD_TIMESTAMP must use YYYY-MM-DD_HH-mm-ssZ UTC+0 format; got '${ENVY_BUILD_TIMESTAMP}'")
 endif ()
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo;MinSizeRel;Nightly" CACHE STRING "" FORCE)
@@ -33,7 +33,7 @@ endif ()
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
 
 # Add all sources in src/* and deps/*
-file(GLOB_RECURSE Latite_SRC CONFIGURE_DEPENDS
+file(GLOB_RECURSE Envy_SRC CONFIGURE_DEPENDS
         "src/*.h"
         "src/*.cpp"
         "deps/*.h"
@@ -71,69 +71,69 @@ file(GLOB_RECURSE RESOURCE_FILES
 
 add_resources(EMBEDDED_RESOURCES ${RESOURCE_FILES})
 
-set(LATITE_BUILD_TIMESTAMP_SOURCE
-        "${PROJECT_BINARY_DIR}/generated/LatiteBuildTimestamp.cpp")
-set_source_files_properties("${LATITE_BUILD_TIMESTAMP_SOURCE}" PROPERTIES GENERATED TRUE)
+set(ENVY_BUILD_TIMESTAMP_SOURCE
+        "${PROJECT_BINARY_DIR}/generated/EnvyBuildTimestamp.cpp")
+set_source_files_properties("${ENVY_BUILD_TIMESTAMP_SOURCE}" PROPERTIES GENERATED TRUE)
 
-add_custom_target(LatiteBuildTimestampGenerator
+add_custom_target(EnvyBuildTimestampGenerator
         COMMAND ${CMAKE_COMMAND}
-        "-DLATITE_BUILD_TIMESTAMP=${LATITE_BUILD_TIMESTAMP}"
-        "-DOUTPUT_FILE=${LATITE_BUILD_TIMESTAMP_SOURCE}"
+        "-DENVY_BUILD_TIMESTAMP=${ENVY_BUILD_TIMESTAMP}"
+        "-DOUTPUT_FILE=${ENVY_BUILD_TIMESTAMP_SOURCE}"
         -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GenerateBuildTimestamp.cmake"
-        BYPRODUCTS "${LATITE_BUILD_TIMESTAMP_SOURCE}"
-        COMMENT "Refreshing Latite UTC build timestamp"
+        BYPRODUCTS "${ENVY_BUILD_TIMESTAMP_SOURCE}"
+        COMMENT "Refreshing Envy UTC build timestamp"
         VERBATIM
 )
 
-add_library(Latite SHARED
-        ${Latite_SRC}
+add_library(Envy SHARED
+        ${Envy_SRC}
         ${EMBEDDED_RESOURCES}
-        "${LATITE_BUILD_TIMESTAMP_SOURCE}"
+        "${ENVY_BUILD_TIMESTAMP_SOURCE}"
 )
-add_dependencies(Latite LatiteBuildTimestampGenerator)
+add_dependencies(Envy EnvyBuildTimestampGenerator)
 
 # Final artifact names. Keep these in CMake so the DLL CodeView record and
 # linker-generated PDB name agree, **do not rename the DLL/PDB after linking!!**
-set_target_properties(Latite PROPERTIES
-        OUTPUT_NAME_RELEASE "Latite"
-        PDB_NAME_RELEASE "Latite"
-        OUTPUT_NAME_RELWITHDEBINFO "Latite"
-        PDB_NAME_RELWITHDEBINFO "Latite"
-        OUTPUT_NAME_DEBUG "LatiteDebug"
-        PDB_NAME_DEBUG "LatiteDebug"
-        OUTPUT_NAME_NIGHTLY "LatiteNightly"
-        PDB_NAME_NIGHTLY "LatiteNightly"
+set_target_properties(Envy PROPERTIES
+        OUTPUT_NAME_RELEASE "Envy"
+        PDB_NAME_RELEASE "Envy"
+        OUTPUT_NAME_RELWITHDEBINFO "Envy"
+        PDB_NAME_RELWITHDEBINFO "Envy"
+        OUTPUT_NAME_DEBUG "EnvyDebug"
+        PDB_NAME_DEBUG "EnvyDebug"
+        OUTPUT_NAME_NIGHTLY "EnvyNightly"
+        PDB_NAME_NIGHTLY "EnvyNightly"
 )
 
 # C++ standard
-set_property(TARGET Latite PROPERTY CXX_STANDARD 23)
-set_property(TARGET Latite PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET Envy PROPERTY CXX_STANDARD 23)
+set_property(TARGET Envy PROPERTY CXX_STANDARD_REQUIRED ON)
 
 # Compile definitions
-target_compile_definitions(Latite PRIVATE
+target_compile_definitions(Envy PRIVATE
         _UNICODE
         UNICODE
         _HAS_STATIC_RTTI=0
 
-        $<$<CONFIG:Debug>:LATITE_DEBUG>
-        $<$<CONFIG:Debug>:LATITE_CRASH_REPORTING>
-        $<$<CONFIG:Release>:LATITE_RELEASE>
-        $<$<CONFIG:Release>:LATITE_CRASH_REPORTING>
-        $<$<CONFIG:RelWithDebInfo>:LATITE_RELEASE>
-        $<$<CONFIG:RelWithDebInfo>:LATITE_CRASH_REPORTING>
-        $<$<CONFIG:MinSizeRel>:LATITE_RELEASE>
-        $<$<CONFIG:Nightly>:LATITE_NIGHTLY>
-        $<$<CONFIG:Nightly>:LATITE_CRASH_REPORTING>
+        $<$<CONFIG:Debug>:ENVY_DEBUG>
+        $<$<CONFIG:Debug>:ENVY_CRASH_REPORTING>
+        $<$<CONFIG:Release>:ENVY_RELEASE>
+        $<$<CONFIG:Release>:ENVY_CRASH_REPORTING>
+        $<$<CONFIG:RelWithDebInfo>:ENVY_RELEASE>
+        $<$<CONFIG:RelWithDebInfo>:ENVY_CRASH_REPORTING>
+        $<$<CONFIG:MinSizeRel>:ENVY_RELEASE>
+        $<$<CONFIG:Nightly>:ENVY_NIGHTLY>
+        $<$<CONFIG:Nightly>:ENVY_CRASH_REPORTING>
 )
 
 # Compile options
-target_compile_options(Latite PRIVATE
+target_compile_options(Envy PRIVATE
         /EHsc
         /GR-
         /W4
 )
 
-target_link_options(Latite PRIVATE
+target_link_options(Envy PRIVATE
         $<$<CONFIG:Release>:/INCREMENTAL:NO>
         $<$<CONFIG:Release>:/OPT:REF>
         $<$<CONFIG:Release>:/OPT:ICF>
@@ -144,13 +144,13 @@ target_link_options(Latite PRIVATE
         $<$<CONFIG:Nightly>:/OPT:NOICF>
 )
 
-target_include_directories(Latite PRIVATE
+target_include_directories(Envy PRIVATE
         src
         deps
 )
 
 # Link libraries
-target_link_libraries(Latite PRIVATE
+target_link_libraries(Envy PRIVATE
         # WinRT
         WindowsApp.lib
         Shlwapi.lib

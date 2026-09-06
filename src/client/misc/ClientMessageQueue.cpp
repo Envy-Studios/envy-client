@@ -14,7 +14,7 @@ void ClientMessageQueue::doPrint(int numMessages) {
         auto cInst = SDK::ClientInstance::get();
         auto lp = cInst->getLocalPlayer();
         if (lp) {
-            LatiteClientMessageEvent ev { msg };
+            EnvyClientMessageEvent ev { msg };
             Eventing::get().dispatch(ev);
 
             cInst->getGuiData()->displayClientMessage(
@@ -42,7 +42,7 @@ void ClientMessageQueue::display(std::string const& message) {
     auto cInst = SDK::ClientInstance::get();
     auto lp = cInst->getLocalPlayer();
     if (lp) {
-        LatiteClientMessageEvent ev { message };
+        EnvyClientMessageEvent ev { message };
         Eventing::get().dispatch(ev);
         cInst->getGuiData()->displayClientMessage(message);
     }

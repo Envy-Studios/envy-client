@@ -28,7 +28,7 @@ void ArmorHUD::render(DrawUtil& ctxGeneric, bool isDefault, bool inEditor) {
         return;
     }
 
-    // dc.setFont(Latite::Get().getFont(Latite::Font::Minecraft));
+    // dc.setFont(Envy::Get().getFont(Envy::Font::Minecraft));
     // dc.setTextShadow(true);
 
     std::array<SDK::ItemStack*, 6> items = {};

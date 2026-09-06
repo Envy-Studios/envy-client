@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef LATITE_DEBUG
+#ifdef ENVY_DEBUG
 #define API_NAMES
 #endif
 
@@ -435,4 +435,4 @@ public:
                                                         "AppPlatformGDK_releaseMouse" };
 };
 
-// after adding sigs here, add them in latite.cpp
+// after adding sigs here, add them in envy.cpp

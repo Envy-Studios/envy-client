@@ -51,7 +51,7 @@ JsValueRef JsWebSocketClass::jsConstructor(JsValueRef callee, bool isConstructor
 
             winrt::hstring message = reader.ReadString(reader.UnconsumedBufferLength());
 
-            Latite::get().queueForClientThread([=] {
+            Envy::get().queueForClientThread([=] {
                 Chakra::SetContext(ctx);
                 auto wstr = std::wstring(message);
                 JsEvented::Event ev { std::wstring(WebSocketHolder::receiveEventId), { Chakra::MakeString(wstr) } };
@@ -72,7 +72,7 @@ JsValueRef JsWebSocketClass::jsConstructor(JsValueRef callee, bool isConstructor
                 bytes.push_back(buf.data()[i]);
             }
 
-            Latite::get().queueForClientThread([=] {
+            Envy::get().queueForClientThread([=] {
                 Chakra::SetContext(ctx);
                 JsValueRef array;
                 uint32_t bufferSize;
@@ -94,7 +94,7 @@ JsValueRef JsWebSocketClass::jsConstructor(JsValueRef callee, bool isConstructor
 
     // fire JS websocket closed event
     socket.Closed([ctx, holder](const IWebSocket& socket, const WebSocketClosedEventArgs& args) {
-        Latite::get().queueForClientThread([=] {
+        Envy::get().queueForClientThread([=] {
             Chakra::SetContext(ctx);
             JsEvented::Event ev { std::wstring(WebSocketHolder::closeEventId), {} };
             holder->dispatchEvent(ev);

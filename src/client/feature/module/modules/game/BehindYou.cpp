@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "BehindYou.h"
 #include <client/input/Keyboard.h>
-#include <client/Latite.h>
+#include <client/Envy.h>
 #include "client/localization/LocalizeString.h"
 
 BehindYou::BehindYou()
@@ -21,7 +21,7 @@ BehindYou::BehindYou()
 void BehindYou::onPerspective(Event& evG) {
     auto& ev = reinterpret_cast<PerspectiveEvent&>(evG);
     if (SDK::ClientInstance::get()->minecraftGame->isCursorGrabbed()) {
-        if (Latite::getKeyboard().isKeyDown(std::get<KeyValue>(this->bind))) {
+        if (Envy::getKeyboard().isKeyDown(std::get<KeyValue>(this->bind))) {
             ev.getView() = 2 - this->pers.getSelectedKey(); // convert to actual mc perspective
         }
     }

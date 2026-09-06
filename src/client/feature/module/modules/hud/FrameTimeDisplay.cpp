@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "FrameTimeDisplay.h"
-#include "client/Latite.h"
+#include "client/Envy.h"
 
 FrameTimeDisplay::FrameTimeDisplay()
     : TextModule("FrameTimeDisplay", LocalizeString::get("client.textmodule.frameTimeDisplay.name"),
@@ -20,7 +20,7 @@ std::wstringstream FrameTimeDisplay::text(bool isDefault, bool inEditor) {
     std::wstringstream ss;
 
     if (elapsed >= std::get<FloatValue>(interval)) {
-        displayedValue = Latite::get().getTimings().getFrameTime();
+        displayedValue = Envy::get().getTimings().getFrameTime();
         lastUpdate = now;
     }
 

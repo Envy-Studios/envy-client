@@ -20,13 +20,13 @@ void __fastcall ScreenViewHooks::setupAndRender(SDK::ScreenView* view, void* ctx
 
     if (view->visualTree->rootControl->name == "debug_screen") {
         PluginManager::Event ev { L"render2d", {}, false };
-        Latite::getPluginManager().dispatchEvent(ev);
+        Envy::getPluginManager().dispatchEvent(ev);
     }
 
     static bool hasInitPacketSender = false;
     if (!hasInitPacketSender) {
         if (SDK::ClientInstance::get()->getLocalPlayer()) {
-            Latite::getHooks().get<PacketHooks>().initPacketSender(
+            Envy::getHooks().get<PacketHooks>().initPacketSender(
                 SDK::ClientInstance::get()->getLocalPlayer()->packetSender);
             hasInitPacketSender = true;
         }

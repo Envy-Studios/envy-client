@@ -8,7 +8,7 @@
 #include "client/event/events/ClickEvent.h"
 #include "client/event/events/CharEvent.h"
 #include "client/render/Renderer.h"
-#include "client/Latite.h"
+#include "client/Envy.h"
 #include "client/feature/module/Module.h"
 #include "client/feature/module/ModuleManager.h"
 #include "util/DrawContext.h"
@@ -86,8 +86,8 @@ namespace {
 }
 
 ClickGUI::ClickGUI() {
-    Latite::get().addTextBox(&this->searchTextBox);
-    this->key = Latite::get().getMenuKey();
+    Envy::get().addTextBox(&this->searchTextBox);
+    this->key = Envy::get().getMenuKey();
 
     Eventing::get().listen<RenderOverlayEvent>(this, (EventListenerFunc)&ClickGUI::onRender, 1, true);
     Eventing::get().listen<RendererCleanupEvent>(this, (EventListenerFunc)&ClickGUI::onCleanup, 1, true);
@@ -121,12 +121,12 @@ void ClickGUI::onRender(Event&) {
         mods.clear();
     }
 
-    if (mods.empty() || (Latite::getModuleManager().size() != lastCount)) {
-        lastCount = Latite::getModuleManager().size();
+    if (mods.empty() || (Envy::getModuleManager().size() != lastCount)) {
+        lastCount = Envy::getModuleManager().size();
         mods.clear();
         // TODO: fetch all market scripts
 
-        auto plugins = Latite::getPluginManager().fetchPluginsFromMarket();
+        auto plugins = Envy::getPluginManager().fetchPluginsFromMarket();
         marketScriptCount = plugins.size();
 
         for (auto& plug : plugins) {
@@ -141,7 +141,7 @@ void ClickGUI::onRender(Event&) {
             mods.emplace_back(container);
         }
 
-        Latite::getModuleManager().forEach([&](std::shared_ptr<Module> mod) {
+        Envy::getModuleManager().forEach([&](std::shared_ptr<Module> mod) {
             if (mod->isVisible()) {
                 ModuleLike container { mod->getDisplayName(), mod->desc(), {}, {}, mod };
                 mods.emplace_back(container);
@@ -151,7 +151,7 @@ void ClickGUI::onRender(Event&) {
     }
 
     {
-        auto scn = Latite::getScreenManager().getActiveScreen();
+        auto scn = Envy::getScreenManager().getActiveScreen();
         if (!isActive() && (calcAnim < 0.03f)) {
             calcAnim = 0.f;
             return;
@@ -176,12 +176,12 @@ void ClickGUI::onRender(Event&) {
     dc.ctx->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
 
     Vec2& cursorPos = SDK::ClientInstance::get()->cursorPos;
-    auto accentColor = d2d::Color(Latite::get().getAccentColor().getMainColor());
+    auto accentColor = d2d::Color(Envy::get().getAccentColor().getMainColor());
     updateScrollbarDrag(cursorPos);
     if (!mouseButtons[0]) draggingScrollbar = false;
 
     // auto& ev = reinterpret_cast<RenderOverlayEvent&>(evGeneric);
-    auto& rend = Latite::getRenderer();
+    auto& rend = Envy::getRenderer();
     auto ss = rend.getScreenSize();
 
     adaptedScale = ss.width / 1920.f;
@@ -200,10 +200,10 @@ void ClickGUI::onRender(Event&) {
 
     rect = { guiX, guiY, ss.width - guiX, ss.height - guiY };
     float guiWidth = rect.getWidth();
-    const bool rtl = Latite::get().getL10nData().isSelectedLanguageRightToLeft();
+    const bool rtl = Envy::get().getL10nData().isSelectedLanguageRightToLeft();
 
-    if (Latite::get().getMenuBlur())
-        dc.drawGaussianBlur(Latite::get().getMenuBlur().value() * (isActive() ? 1.f : calcAnim));
+    if (Envy::get().getMenuBlur())
+        dc.drawGaussianBlur(Envy::get().getMenuBlur().value() * (isActive() ? 1.f : calcAnim));
 
     // Animation
     D2D1::Matrix3x2F oTransform;
@@ -215,7 +215,7 @@ void ClickGUI::onRender(Event&) {
             D2D1::Matrix3x2F::Scale({ calcAnim, calcAnim }, D2D1_POINT_2F(rect.center().x, rect.center().y)));
         dc.ctx->GetTransform(&currentMatr);
     }
-    calcAnim = std::lerp(calcAnim, isActive() ? 1.f : 0.f, Latite::getRenderer().getDeltaTime() * 0.2f);
+    calcAnim = std::lerp(calcAnim, isActive() ? 1.f : 0.f, Envy::getRenderer().getDeltaTime() * 0.2f);
 
     d2d::Color outline = d2d::Color::RGB(0, 0, 0);
     outline.a = 0.28f;
@@ -225,9 +225,9 @@ void ClickGUI::onRender(Event&) {
 
     if (!isActive()) return;
     // Shadow effect stuff
-    auto shadowEffect = Latite::getRenderer().getShadowEffect();
+    auto shadowEffect = Envy::getRenderer().getShadowEffect();
     shadowEffect->SetValue(D2D1_SHADOW_PROP_COLOR, D2D1::Vector4F(0.f, 0.f, 0.f, 0.1f));
-    auto affineTransformEffect = Latite::getRenderer().getAffineTransformEffect();
+    auto affineTransformEffect = Envy::getRenderer().getAffineTransformEffect();
 
     D2D1::Matrix3x2F mat = D2D1::Matrix3x2F::Translation(10.f * adaptedScale, 5.f * adaptedScale);
     affineTransformEffect->SetInputEffect(0, shadowEffect);
@@ -246,13 +246,13 @@ void ClickGUI::onRender(Event&) {
 
     RectF logoRect = d2d::rectFromStart(rect, offX, rect.top + offY, imgSize, imgSize, rtl);
 
-    // Latite Logo + text
+    // Envy Logo + text
     {
         {
-            auto bmp = Latite::getAssets().latiteLogo.getBitmap();
+            auto bmp = Envy::getAssets().envyLogo.getBitmap();
 
             D2D1::Matrix3x2F oMat;
-            auto sz = Latite::getRenderer().getScreenSize();
+            auto sz = Envy::getRenderer().getScreenSize();
 
             D2D1::Matrix3x2F m;
 
@@ -264,10 +264,10 @@ void ClickGUI::onRender(Event&) {
             // dc.ctx->SetTransform(m);
         }
 
-        // Latite Text
+        // Envy Text
         float realLogoHeight = rect.getHeight() * 0.077921f;
         float titleSize = 25.f * adaptedScale;
-        std::wstring titleText = L"\x202ALatite Client\x202C";
+        std::wstring titleText = L"\x202AEnvy Client\x202C";
         float titleGap = 9.f * adaptedScale;
         float titleWidth = 500.f * adaptedScale;
         RectF titleRect = rtl ? RectF { logoRect.left - titleGap - titleWidth, logoRect.top, logoRect.left - titleGap,
@@ -289,7 +289,7 @@ void ClickGUI::onRender(Event&) {
 
         RectF xRect = d2d::rectFromEnd(rect, xOffs, rect.top + yOffs, xWidth, xHeight, rtl);
 
-        auto bmp = Latite::getAssets().xIcon.getBitmap();
+        auto bmp = Envy::getAssets().xIcon.getBitmap();
         dc.ctx->DrawBitmap(bmp, xRect, 1.f);
 
         if (shouldSelect(xRect, cursorPos)) {
@@ -304,7 +304,7 @@ void ClickGUI::onRender(Event&) {
             RectF backArrowRect =
                 rtl ? RectF { xRect.right + betw, xRect.top, xRect.right + betw + xWidth, xRect.bottom }
                     : RectF { xRect.left - betw - xWidth, xRect.top, xRect.left - betw, xRect.bottom };
-            { dc.drawBitmapMirroredX(Latite::getAssets().arrowBackIcon.getBitmap(), backArrowRect, rtl); }
+            { dc.drawBitmapMirroredX(Envy::getAssets().arrowBackIcon.getBitmap(), backArrowRect, rtl); }
             if (shouldSelect(backArrowRect, cursorPos)) {
                 if (justClicked[0]) {
                     playClickSound();
@@ -321,14 +321,14 @@ void ClickGUI::onRender(Event&) {
                                   : RectF { xRect.left - betw - hudEditWidth, xRect.bottom - hudEditHeight,
                                             xRect.left - betw, xRect.bottom };
 
-                dc.ctx->DrawBitmap(Latite::getAssets().hudEditIcon.getBitmap(), hudEditRect);
+                dc.ctx->DrawBitmap(Envy::getAssets().hudEditIcon.getBitmap(), hudEditRect);
 
                 if (shouldSelect(hudEditRect, cursorPos)) {
                     setTooltip(LocalizeString::get("client.ui.clickGui.openHudEditor.desc"));
                     if (justClicked[0]) {
                         playClickSound();
                         close();
-                        Latite::getScreenManager().showScreen<HUDEditor>(true);
+                        Envy::getScreenManager().showScreen<HUDEditor>(true);
                     }
                 }
             }
@@ -350,7 +350,7 @@ void ClickGUI::onRender(Event&) {
                     }
                 }
 
-                dc.ctx->DrawBitmap(Latite::getAssets().cogIcon.getBitmap(), settingsRect);
+                dc.ctx->DrawBitmap(Envy::getAssets().cogIcon.getBitmap(), settingsRect);
             }
         }
     }
@@ -436,7 +436,7 @@ void ClickGUI::onRender(Event&) {
                         : RectF { searchRect.left + 10.f, searchRect.top + 6.f,
                                   searchRect.left - 3.f + searchRect.getHeight(),
                                   searchRect.top + searchRect.getHeight() - 6.f };
-                dc.ctx->DrawBitmap(Latite::getAssets().searchIcon.getBitmap(), searchIconRect);
+                dc.ctx->DrawBitmap(Envy::getAssets().searchIcon.getBitmap(), searchIconRect);
             }
 
             dc.ctx->SetTarget(myBitmap);
@@ -444,7 +444,7 @@ void ClickGUI::onRender(Event&) {
 
         if (tab == SETTINGS) {
             // actual settings
-            auto& settings = Latite::getSettings();
+            auto& settings = Envy::getSettings();
             std::wstring settingSearch = lowercase(searchTextBox.getText());
 
             float settingWidth = rect.getWidth() / 3.f;
@@ -542,7 +542,7 @@ void ClickGUI::onRender(Event&) {
 
                 std::get<3>(pair) = std::lerp(
                     std::get<3>(pair), ((contains && mouseButtons[0]) || modTab == std::get<1>(pair)) ? 1.f : 0.f,
-                    Latite::getRenderer().getDeltaTime() / 5.f);
+                    Envy::getRenderer().getDeltaTime() / 5.f);
 
                 contains = shouldSelect(renderTabRect, cursorPos);
 
@@ -595,7 +595,7 @@ void ClickGUI::onRender(Event&) {
 
         this->scroll = std::clamp(scroll, 0.f, scrollMax);
 
-        lerpScroll = std::lerp(lerpScroll, scroll, Latite::getRenderer().getDeltaTime() / 5.f);
+        lerpScroll = std::lerp(lerpScroll, scroll, Envy::getRenderer().getDeltaTime() / 5.f);
 
         std::vector<std::reference_wrapper<ModuleLike>> displayedModLikes;
 
@@ -894,7 +894,7 @@ void ClickGUI::onRender(Event&) {
                         float onDist = center2.x - center.x;
 
                         mod.lerpToggle = std::lerp(mod.lerpToggle, mod.mod->isEnabled() ? 1.f : 0.f,
-                                                   Latite::getRenderer().getDeltaTime() * 0.3f);
+                                                   Envy::getRenderer().getDeltaTime() * 0.3f);
 
                         center.x += onDist * mod.lerpToggle;
 
@@ -926,9 +926,9 @@ void ClickGUI::onRender(Event&) {
                     dc.ctx->SetTransform(D2D1::Matrix3x2F::Rotation((1.f - mod.lerpArrowRot) * 180.f,
                                                                     { arrowRc.centerX(), arrowRc.centerY() }) *
                                          oMatr);
-                    mod.lerpArrowRot = std::lerp(mod.lerpArrowRot, toLerp, Latite::getRenderer().getDeltaTime() * 0.3f);
+                    mod.lerpArrowRot = std::lerp(mod.lerpArrowRot, toLerp, Envy::getRenderer().getDeltaTime() * 0.3f);
                     // icon
-                    dc.ctx->DrawBitmap(Latite::getAssets().arrowIcon.getBitmap(), arrowRc.get());
+                    dc.ctx->DrawBitmap(Envy::getAssets().arrowIcon.getBitmap(), arrowRc.get());
                     dc.ctx->SetTransform(oMatr);
                 } else if (mod.isMarketScript) {
                     if (shouldSelect(modRect, cursorPos)) {
@@ -943,7 +943,7 @@ void ClickGUI::onRender(Event&) {
                         installUpdateRect.left = installUpdateRect.right - installUpdateRect.getWidth() * 1.5f;
                     }
 
-                    auto documentIconBitmap = Latite::getAssets().document.getBitmap();
+                    auto documentIconBitmap = Envy::getAssets().document.getBitmap();
                     auto bitmapSize = documentIconBitmap->GetPixelSize();
 
                     // we can't directly use the arrow rect because the height to width ratio of the document icon is
@@ -967,7 +967,7 @@ void ClickGUI::onRender(Event&) {
                         auto result = PluginManager::installScript(mod.pluginId);
                         if (!result.has_value()) {
                             auto& error = result.error();
-                            Latite::getNotifications().push(util::StrToWStr(error));
+                            Envy::getNotifications().push(util::StrToWStr(error));
                         } else {
                             shouldRebuildModLikes = true;
                         }
@@ -993,7 +993,7 @@ void ClickGUI::onRender(Event&) {
             mod.modRect = modRectActual;
 
             mod.lerpHover = std::lerp(mod.lerpHover, shouldSelect(modRectActual, cursorPos) ? 1.f : 0.f,
-                                      Latite::getRenderer().getDeltaTime() / 5.f);
+                                      Envy::getRenderer().getDeltaTime() / 5.f);
 
             // scrolling max
             float scrollYNew = std::max(0.f, (modRectActual.bottom + padFromSearchBar) - rect.bottom) + lerpScroll;
@@ -1072,18 +1072,18 @@ void ClickGUI::onRender(Event&) {
 
     dc.ctx->SetTransform(oTransform);
 
-    dc.ctx->SetTarget(Latite::getRenderer().getBitmap());
+    dc.ctx->SetTarget(Envy::getRenderer().getBitmap());
     // dc.ctx->DrawImage(myBitmap);
 
     if (shouldArrow) cursor = Cursor::Arrow;
 }
 
 void ClickGUI::onInit(Event&) {
-    auto myBitmap = Latite::getRenderer().getBitmap();
+    auto myBitmap = Envy::getRenderer().getBitmap();
     D2D1_SIZE_U bitmapSize = myBitmap->GetPixelSize();
     D2D1_PIXEL_FORMAT pixelFormat = myBitmap->GetPixelFormat();
 
-    auto dc = Latite::getRenderer().getDeviceContext();
+    auto dc = Envy::getRenderer().getDeviceContext();
 
     dc->CreateBitmap(bitmapSize, nullptr, 0, D2D1::BitmapProperties1(D2D1_BITMAP_OPTIONS_TARGET, pixelFormat),
                      shadowBitmap.GetAddressOf());
@@ -1182,9 +1182,9 @@ float ClickGUI::drawSetting(Setting* set, SettingGroup*, Vec2 const& pos, D2DUti
     const float textSize = checkboxSize * 0.8f;
     const auto cursorPos = SDK::ClientInstance::get()->cursorPos;
     const float round = 0.1875f * checkboxSize;
-    const bool rtl = Latite::get().getL10nData().isSelectedLanguageRightToLeft();
+    const bool rtl = Envy::get().getL10nData().isSelectedLanguageRightToLeft();
 
-    auto accentColor = d2d::Color(Latite::get().getAccentColor().getMainColor());
+    auto accentColor = d2d::Color(Envy::get().getAccentColor().getMainColor());
 
     switch (static_cast<Setting::Type>(set->value->index())) {
     case Setting::Type::Text: {
@@ -1215,7 +1215,7 @@ float ClickGUI::drawSetting(Setting* set, SettingGroup*, Vec2 const& pos, D2DUti
             tb->setText(textVal.str);
             tb->setCaretLocation(static_cast<int>(textVal.str.size()));
             settingBoxes[set] = tb;
-            Latite::get().addTextBox(settingBoxes[set].get());
+            Envy::get().addTextBox(settingBoxes[set].get());
         }
         tb->setRect(txtRc);
         tb->render(dc, round, col, D2D1::ColorF::White);
@@ -1281,7 +1281,7 @@ float ClickGUI::drawSetting(Setting* set, SettingGroup*, Vec2 const& pos, D2DUti
             RectF markRect = { checkboxRect.left + checkWidth / 4.f, checkboxRect.top + checkHeight / 2.f,
                                checkboxRect.right - checkWidth / 4.f, checkboxRect.bottom - checkHeight / 2.f };
 
-            dc.ctx->DrawBitmap(Latite::getAssets().checkmarkIcon.getBitmap(), markRect);
+            dc.ctx->DrawBitmap(Envy::getAssets().checkmarkIcon.getBitmap(), markRect);
         }
 
         dc.drawWrappedTextClipped(textRect, disp, { 1.f, 1.f, 1.f, 1.f }, FontSelection::PrimarySemilight, textSize);
@@ -1465,7 +1465,7 @@ float ClickGUI::drawSetting(Setting* set, SettingGroup*, Vec2 const& pos, D2DUti
         bool contains = this->shouldSelect(enumRect, cursorPos);
         bool dropdownOpen = dropdownSetting == set;
         float& dropdownAnim = dropdownAnimations[set];
-        dropdownAnim = std::lerp(dropdownAnim, dropdownOpen ? 1.f : 0.f, Latite::getRenderer().getDeltaTime() * 0.3f);
+        dropdownAnim = std::lerp(dropdownAnim, dropdownOpen ? 1.f : 0.f, Envy::getRenderer().getDeltaTime() * 0.3f);
         if (dropdownOpen && dropdownAnim > 0.995f)
             dropdownAnim = 1.f;
         else if (!dropdownOpen && dropdownAnim < 0.005f)
@@ -1490,7 +1490,7 @@ float ClickGUI::drawSetting(Setting* set, SettingGroup*, Vec2 const& pos, D2DUti
                                                enumRect.right - arrowPad - arrowSize - entryPadX, enumRect.bottom };
         dc.drawSingleLineFitted(selectedTextRect, text, d2d::Color(1.f, 1.f, 1.f, 1.f), FontSelection::PrimaryRegular,
                                 enumTextSize, DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
-        dc.drawBitmapRotated(Latite::getAssets().arrowIcon.getBitmap(), arrowRect, dropdownAnim * 180.f, 0.92f);
+        dc.drawBitmapRotated(Envy::getAssets().arrowIcon.getBitmap(), arrowRect, dropdownAnim * 180.f, 0.92f);
 
         if (renderDropdown) {
             dc.drawRoundedRectangle(enumRect, d2d::Color(1.f, 1.f, 1.f, 1.f), round);
@@ -1598,7 +1598,7 @@ float ClickGUI::drawSetting(Setting* set, SettingGroup*, Vec2 const& pos, D2DUti
         ComPtr<ID2D1GradientStopCollection> gradientStopCollection;
 
         D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES prop {};
-        auto ss = Latite::getRenderer().getScreenSize();
+        auto ss = Envy::getRenderer().getScreenSize();
         prop.startPoint = { 0.f, ss.height / 2.f };
         prop.endPoint = { ss.width, ss.height / 2.f };
 
@@ -1706,7 +1706,7 @@ float ClickGUI::drawSetting(Setting* set, SettingGroup*, Vec2 const& pos, D2DUti
             valueBox->setText(formattedValue);
             valueBox->setCaretLocation(static_cast<int>(formattedValue.size()));
             valueBoxIt = settingBoxes.emplace(set, std::move(valueBox)).first;
-            Latite::get().addTextBox(valueBoxIt->second.get());
+            Envy::get().addTextBox(valueBoxIt->second.get());
         }
 
         auto& valueBox = *valueBoxIt->second;
@@ -1825,7 +1825,7 @@ bool ClickGUI::shouldSelect(d2d::Rect rc, Vec2 const& pt) {
 
 void ClickGUI::drawColorPicker() {
     auto& cursorPos = SDK::ClientInstance::get()->cursorPos;
-    const bool rtl = Latite::get().getL10nData().isSelectedLanguageRightToLeft();
+    const bool rtl = Envy::get().getL10nData().isSelectedLanguageRightToLeft();
     D2DUtil dc;
     dc.ctx->SetTarget(auxiliaryBitmap.Get());
     dc.ctx->Clear();
@@ -1869,7 +1869,7 @@ void ClickGUI::drawColorPicker() {
         ComPtr<ID2D1GradientStopCollection> gradientStopCollection;
 
         D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES prop {};
-        auto ss = Latite::getRenderer().getScreenSize();
+        auto ss = Envy::getRenderer().getScreenSize();
         prop.startPoint = { boxRect.left, boxRect.top };
         prop.endPoint = { boxRect.right, boxRect.top };
 
@@ -1884,7 +1884,7 @@ void ClickGUI::drawColorPicker() {
         ComPtr<ID2D1GradientStopCollection> gradientStopCollection;
 
         D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES prop {};
-        auto ss = Latite::getRenderer().getScreenSize();
+        auto ss = Envy::getRenderer().getScreenSize();
         prop.startPoint = { boxRect.left, boxRect.bottom };
         prop.endPoint = { boxRect.left, boxRect.top };
 
@@ -1911,7 +1911,7 @@ void ClickGUI::drawColorPicker() {
         ComPtr<ID2D1GradientStopCollection> gradientStopCollection;
 
         D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES prop {};
-        auto ss = Latite::getRenderer().getScreenSize();
+        auto ss = Envy::getRenderer().getScreenSize();
         prop.startPoint = { hueBar.left, hueBar.top };
         prop.endPoint = { hueBar.right, hueBar.top };
 
@@ -1944,7 +1944,7 @@ void ClickGUI::drawColorPicker() {
         ComPtr<ID2D1GradientStopCollection> gradientStopCollection;
 
         D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES prop {};
-        auto ss = Latite::getRenderer().getScreenSize();
+        auto ss = Envy::getRenderer().getScreenSize();
         prop.startPoint = { alphaBar.left, alphaBar.top };
         prop.endPoint = { alphaBar.right, alphaBar.top };
 
@@ -1996,7 +1996,7 @@ void ClickGUI::drawColorPicker() {
 
             if (pickerTextBoxes.size() <= i) {
                 pickerTextBoxes.insert(pickerTextBoxes.begin() + i, TextBox(hexBox, 7));
-                Latite::get().addTextBox(&pickerTextBoxes[i]);
+                Envy::get().addTextBox(&pickerTextBoxes[i]);
             }
             auto& tb = pickerTextBoxes[i];
 
@@ -2134,7 +2134,7 @@ void ClickGUI::drawColorPicker() {
 
     cPickerRect.bottom = alphaBar.bottom + remPad * 2.f + 50.f;
 
-    dc.ctx->SetTarget(Latite::getRenderer().getBitmap());
+    dc.ctx->SetTarget(Envy::getRenderer().getBitmap());
 
     // draw menu
 
@@ -2148,7 +2148,7 @@ void ClickGUI::drawColorPicker() {
                                 cPickerRect.top + xWidth * 2.f }
                       : RectF { cPickerRect.right - xWidth * 2.f, cPickerRect.top + xWidth, cPickerRect.right - xWidth,
                                 cPickerRect.top + xWidth * 2.f };
-    dc.ctx->DrawBitmap(Latite::getAssets().xIcon.getBitmap(), xRect);
+    dc.ctx->DrawBitmap(Envy::getAssets().xIcon.getBitmap(), xRect);
 
     if (justClicked[0] && xRect.contains(cursorPos)) {
         colorPicker.queueClose = true;
@@ -2171,7 +2171,7 @@ void ClickGUI::drawColorPicker() {
         cPickerRect.setPos(cursorPos - colorPicker.dragOffs);
     }
 
-    auto ss = Latite::getRenderer().getScreenSize();
+    auto ss = Envy::getRenderer().getScreenSize();
     util::KeepInBounds(cPickerRect, { 0.f, 0.f, ss.width, ss.height });
 }
 
@@ -2205,5 +2205,5 @@ void ClickGUI::onDisable() {
         tb.setSelected(false);
     }
 
-    Latite::getConfigManager().saveCurrentConfig();
+    Envy::getConfigManager().saveCurrentConfig();
 }

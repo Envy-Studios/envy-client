@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "TempStorage.h"
 
-std::filesystem::path LatiteTemp::resolvePath(std::filesystem::path const& relative) {
+std::filesystem::path EnvyTemp::resolvePath(std::filesystem::path const& relative) {
     std::error_code ec;
     auto temp = std::filesystem::temp_directory_path(ec);
     if (ec || temp.empty()) {
@@ -14,7 +14,7 @@ std::filesystem::path LatiteTemp::resolvePath(std::filesystem::path const& relat
         temp = std::filesystem::path(buffer);
     }
 
-    auto root = temp / "Latite";
+    auto root = temp / "Envy";
     if (relative.empty()) {
         return root;
     }
@@ -22,7 +22,7 @@ std::filesystem::path LatiteTemp::resolvePath(std::filesystem::path const& relat
     return root / relative;
 }
 
-void LatiteTemp::cleanup() {
+void EnvyTemp::cleanup() {
     std::error_code ec;
     auto temp = std::filesystem::temp_directory_path(ec);
     if (ec || temp.empty()) {
@@ -35,8 +35,8 @@ void LatiteTemp::cleanup() {
         temp = std::filesystem::path(buffer);
     }
 
-    auto root = temp / "Latite";
-    if (root.empty() || root.filename().wstring() != L"Latite") {
+    auto root = temp / "Envy";
+    if (root.empty() || root.filename().wstring() != L"Envy") {
         return;
     }
 

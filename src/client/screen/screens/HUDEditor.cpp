@@ -6,7 +6,7 @@
 
 #include "client/event/Eventing.h"
 #include "client/event/events/DrawHUDModulesEvent.h"
-#include "client/Latite.h"
+#include "client/Envy.h"
 #include "client/config/ConfigManager.h"
 #include "client/localization/LocalizeString.h"
 #include "client/feature/module/ModuleManager.h"
@@ -29,41 +29,41 @@ HUDEditor::HUDEditor()
 }
 
 void HUDEditor::onRender(Event& ev) {
-    if (!isActive() && Latite::getModuleManager().shouldHideModulesForTabList()) {
+    if (!isActive() && Envy::getModuleManager().shouldHideModulesForTabList()) {
         return;
     }
 
     D2DUtil dc;
-    bool mcRenderer = Latite::get().useMinecraftRenderer();
+    bool mcRenderer = Envy::get().useMinecraftRenderer();
 
     std::vector<d2d::Rect> maskRects = {};
 
     if (isActive()) {
-        Latite::getModuleManager().forEach([&](std::shared_ptr<Module> mod) {
+        Envy::getModuleManager().forEach([&](std::shared_ptr<Module> mod) {
             if (mod->isHud() && mod->isEnabled()) {
                 auto rMod = reinterpret_cast<HUDModule*>(mod.get());
-                if (Latite::get().getMenuBlur() && (mcRenderer || rMod->forceMinecraftRenderer()))
+                if (Envy::get().getMenuBlur() && (mcRenderer || rMod->forceMinecraftRenderer()))
                     maskRects.push_back(rMod->getRect());
                 if (rMod->isActive()) return;
                 addLayer(rMod->getRect());
             }
         });
 
-        auto alpha = Latite::getRenderer().getDeltaTime() / 10.f;
+        auto alpha = Envy::getRenderer().getDeltaTime() / 10.f;
         anim = std::lerp(anim, 1.f, alpha);
 
-        float toBlur = Latite::get().getMenuBlur().value_or(0.f);
-        if (Latite::get().getMenuBlur()) dc.drawGaussianBlur(toBlur * anim);
+        float toBlur = Envy::get().getMenuBlur().value_or(0.f);
+        if (Envy::get().getMenuBlur()) dc.drawGaussianBlur(toBlur * anim);
         // cut out stuff, for movable scoreboard and paperdoll in future
 
         for (auto& control : maskRects) {
-            auto bmp = Latite::getRenderer().getCopiedBitmap(control);
+            auto bmp = Envy::getRenderer().getCopiedBitmap(control);
 
             dc.ctx->DrawBitmap(bmp);
 
             bmp->Release();
         }
-        Latite::getRenderer().getDeviceContext()->Flush();
+        Envy::getRenderer().getDeviceContext()->Flush();
 
         auto& cursorPos = SDK::ClientInstance::get()->cursorPos;
 
@@ -72,7 +72,7 @@ void HUDEditor::onRender(Event& ev) {
             float buttonWidth = 200.f;
             float buttonHeight = 60.f;
 
-            auto ss = Latite::getRenderer().getScreenSize();
+            auto ss = Envy::getRenderer().getScreenSize();
 
             d2d::Rect ssRec = { 0.f, 0.f, ss.width, ss.height };
             Vec2 btnPos = ssRec.center({ 200.f, 60.f });
@@ -84,8 +84,8 @@ void HUDEditor::onRender(Event& ev) {
 
             bool state = shouldSelect(btnRect, cursorPos);
             if (state && justClicked[0]) {
-                Latite::getScreenManager().exitCurrentScreen();
-                Latite::getScreenManager().showScreen<ClickGUI>();
+                Envy::getScreenManager().exitCurrentScreen();
+                Envy::getScreenManager().showScreen<ClickGUI>();
                 playClickSound();
             }
 
@@ -106,7 +106,7 @@ void HUDEditor::onRender(Event& ev) {
     if (!mcRenderer) {
         renderModules(nullptr);
         keepModulesInBounds(
-            Vec2(Latite::getRenderer().getScreenSize().width, Latite::getRenderer().getScreenSize().height));
+            Vec2(Envy::getRenderer().getScreenSize().width, Envy::getRenderer().getScreenSize().height));
     } else {
         keepModulesInBounds(SDK::ClientInstance::get()->getGuiData()->screenSize);
     }
@@ -119,7 +119,7 @@ void HUDEditor::onClick(Event& evGeneric) {
         ev.setCancelled();
     }
 
-    Latite::getModuleManager().forEach([&](std::shared_ptr<Module> mod) {
+    Envy::getModuleManager().forEach([&](std::shared_ptr<Module> mod) {
         if (!mod->isHud()) return;
         auto hudMod = reinterpret_cast<HUDModule*>(mod.get());
 
@@ -135,9 +135,9 @@ void HUDEditor::onClick(Event& evGeneric) {
         } else if (ev.getMouseButton() == 3) {
             hudMod->setEnabled(false);
         } else if (ev.getMouseButton() == 2) {
-            Latite::getScreenManager().get<ClickGUI>().jumpToModule(hudMod->name());
+            Envy::getScreenManager().get<ClickGUI>().jumpToModule(hudMod->name());
             close();
-            Latite::getScreenManager().showScreen<ClickGUI>(true);
+            Envy::getScreenManager().showScreen<ClickGUI>(true);
         } else {
             ev.setCancelled(false);
         }
@@ -145,18 +145,18 @@ void HUDEditor::onClick(Event& evGeneric) {
 }
 
 void HUDEditor::onRenderLayer(Event& evGeneric) {
-    if (!isActive() && Latite::getModuleManager().shouldHideModulesForTabList()) {
+    if (!isActive() && Envy::getModuleManager().shouldHideModulesForTabList()) {
         return;
     }
 
     auto& ev = static_cast<RenderLayerEvent&>(evGeneric);
-    bool mcRenderer = Latite::get().useMinecraftRenderer();
+    bool mcRenderer = Envy::get().useMinecraftRenderer();
 
     if (ev.getScreenView()->visualTree->rootControl->name == "debug_screen") {
         if (isActive() || SDK::ClientInstance::get()->minecraftGame->isCursorGrabbed()) {
-            Latite::getModuleManager().forEach([&](std::shared_ptr<Module> mod) {
+            Envy::getModuleManager().forEach([&](std::shared_ptr<Module> mod) {
                 if (mod->isHud() && mod->isEnabled() && reinterpret_cast<HUDModule*>(mod.get())->isActive() &&
-                    Latite::getRenderer().getDeviceContext()) {
+                    Envy::getRenderer().getDeviceContext()) {
                     auto rMod = reinterpret_cast<HUDModule*>(mod.get());
 
                     if (rMod->getCategory() == Module::SCRIPT) {
@@ -189,7 +189,7 @@ void HUDEditor::onRenderLayer(Event& evGeneric) {
             return;
         }
 
-        MCDrawUtil dc = { ev.getUIRenderContext(), Latite::get().getFont() };
+        MCDrawUtil dc = { ev.getUIRenderContext(), Envy::get().getFont() };
 
         auto& ss = SDK::ClientInstance::get()->getGuiData()->screenSize;
         // if (isActive()) dc.fillRectangle({ 0.f, 0.f, ss.x, ss.y }, { 0.4f, 0.4f, 0.4f, 0.4f * this->anim });
@@ -200,7 +200,7 @@ void HUDEditor::onRenderLayer(Event& evGeneric) {
     }
 
     if (!SDK::ClientInstance::get()->minecraftGame->isCursorGrabbed()) {
-        Latite::getModuleManager().forEach([](std::shared_ptr<Module> mod) {
+        Envy::getModuleManager().forEach([](std::shared_ptr<Module> mod) {
             if (mod->isEnabled() && mod->shouldHoldToToggle()) {
                 mod->setEnabled(false);
             }
@@ -270,7 +270,7 @@ void HUDEditor::onKey(Event& evGeneric) {
 }
 
 void HUDEditor::renderModules(SDK::MinecraftUIRenderContext* ctx, bool forceMinecraftOnly) {
-    if (!isActive() && Latite::getModuleManager().shouldHideModulesForTabList()) {
+    if (!isActive() && Envy::getModuleManager().shouldHideModulesForTabList()) {
         return;
     }
 
@@ -285,7 +285,7 @@ void HUDEditor::renderModules(SDK::MinecraftUIRenderContext* ctx, bool forceMine
         lastScreenSize = guiData->screenSize;
     } else {
         if (*lastScreenSize != guiData->screenSize) {
-            Latite::getModuleManager().forEach([&](std::shared_ptr<Module> mod) {
+            Envy::getModuleManager().forEach([&](std::shared_ptr<Module> mod) {
                 if (mod->isHud()) {
                     HUDModule* rMod = reinterpret_cast<HUDModule*>(mod.get());
                     Vec2 oPos = rMod->getRect().getPos();
@@ -300,9 +300,9 @@ void HUDEditor::renderModules(SDK::MinecraftUIRenderContext* ctx, bool forceMine
     lastScreenSize = guiData->screenSize;
 
     if (isActive() || SDK::ClientInstance::get()->minecraftGame->isCursorGrabbed()) {
-        Latite::getModuleManager().forEach([&](std::shared_ptr<Module> mod) {
-            if (!Latite::get().useMinecraftRenderer()) {
-                if ((forceMinecraftOnly || Latite::get().useMinecraftRenderer()) ^
+        Envy::getModuleManager().forEach([&](std::shared_ptr<Module> mod) {
+            if (!Envy::get().useMinecraftRenderer()) {
+                if ((forceMinecraftOnly || Envy::get().useMinecraftRenderer()) ^
                     static_cast<Module*>(mod.get())->forceMinecraftRenderer())
                     return;
             }
@@ -310,8 +310,8 @@ void HUDEditor::renderModules(SDK::MinecraftUIRenderContext* ctx, bool forceMine
                 auto hudModule = static_cast<HUDModule*>(mod.get());
                 renderModule(hudModule, ctx);
                 hudModule->storePos(ctx ? SDK::ClientInstance::get()->getGuiData()->screenSize
-                                        : Vec2(Latite::getRenderer().getScreenSize().width,
-                                               Latite::getRenderer().getScreenSize().height));
+                                        : Vec2(Envy::getRenderer().getScreenSize().width,
+                                               Envy::getRenderer().getScreenSize().height));
             }
         });
     }
@@ -331,7 +331,7 @@ void HUDEditor::renderModule(HUDModule* mod, SDK::MinecraftUIRenderContext* ctx)
         mod->render(dc, false, isActive());
         dc.ctx->SetTransform(oTrans);
     } else {
-        MCDrawUtil dc { ctx, Latite::get().getFont() };
+        MCDrawUtil dc { ctx, Envy::get().getFont() };
         if (isActive()) mod->renderFrame(dc);
         dc.setImmediate(false);
         dc.flush();
@@ -347,7 +347,7 @@ void HUDEditor::renderModule(HUDModule* mod, SDK::MinecraftUIRenderContext* ctx)
 
     if (isActive()) {
         if (ctx) {
-            MCDrawUtil dc { ctx, Latite::get().getFont() };
+            MCDrawUtil dc { ctx, Envy::get().getFont() };
             if (hovering) mod->renderSelected(dc);
             mod->renderPost(dc);
             dc.flush();
@@ -373,7 +373,7 @@ void HUDEditor::doDragging() {
         // Find a dragging element
         if (isDown) {
             bool doDrag = true;
-            Latite::getModuleManager().forEach([&](std::shared_ptr<Module> mod) {
+            Envy::getModuleManager().forEach([&](std::shared_ptr<Module> mod) {
                 if (doDrag) {
                     if (mod->isEnabled() && mod->isHud()) {
                         HUDModule* rMod = static_cast<HUDModule*>(mod.get());
@@ -392,7 +392,7 @@ void HUDEditor::doDragging() {
 }
 
 void HUDEditor::doSnapping(Vec2 const&) {
-    auto ssx = Latite::getRenderer().getScreenSize();
+    auto ssx = Envy::getRenderer().getScreenSize();
     Vec2 ss = { ssx.width, ssx.height };
     auto& mousePos = SDK::ClientInstance::get()->cursorPos;
 
@@ -411,7 +411,7 @@ void HUDEditor::doSnapping(Vec2 const&) {
         if (rec.bottom > 0.f && rec.bottom < ss.y) snapLinesControlsY.push_back(rec.bottom);
     }
 
-    if (isActive() && dragMod && Latite::get().getDoSnapLines()) {
+    if (isActive() && dragMod && Envy::get().getDoSnapLines()) {
         auto pos = mousePos - dragOffset;
 
         float snapRange = 10.f;
@@ -557,7 +557,7 @@ void HUDEditor::doSnapping(Vec2 const&) {
         }
     } else {
         // Keep modules in their snapped state
-        Latite::getModuleManager().forEach([&](std::shared_ptr<Module> mod) {
+        Envy::getModuleManager().forEach([&](std::shared_ptr<Module> mod) {
             if (mod->isHud() && mod->isEnabled()) {
                 auto rMod = static_cast<HUDModule*>(mod.get());
                 if (!rMod->isActive()) return;
@@ -637,7 +637,7 @@ void HUDEditor::doSnapping(Vec2 const&) {
 }
 
 void HUDEditor::keepModulesInBounds(Vec2 const& ss) {
-    Latite::getModuleManager().forEach([&](std::shared_ptr<Module> mod) {
+    Envy::getModuleManager().forEach([&](std::shared_ptr<Module> mod) {
         if (mod->isEnabled() && mod->isHud()) {
             HUDModule* rMod = static_cast<HUDModule*>(mod.get());
             if (!rMod->isActive()) return false;
@@ -688,7 +688,7 @@ void HUDEditor::onEnable(bool ignoreAnims) {
 void HUDEditor::onDisable() {
     dragMod = nullptr;
     clearLayers();
-    if (!Latite::get().isEjectQueued()) {
-        Latite::getConfigManager().saveCurrentConfig();
+    if (!Envy::get().isEjectQueued()) {
+        Envy::getConfigManager().saveCurrentConfig();
     }
 }

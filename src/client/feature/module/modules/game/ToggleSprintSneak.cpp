@@ -22,7 +22,7 @@ ToggleSprintSneak::ToggleSprintSneak()
                "toggleSprint"_istrue);
 
     // sprintMode.addEntry({ sprint_mode_normal, "Normal", "Lets the game handle the sprinting" });
-    // sprintMode.addEntry({ sprint_mode_raw, "Raw", "Latite makes the player sprint" });
+    // sprintMode.addEntry({ sprint_mode_raw, "Raw", "Envy makes the player sprint" });
     // addEnumSetting("sprintMode", "Sprint Mode", "The method used by the client to sprint", sprintMode,
     // "toggleSprint"_istrue);
     addSetting("toggleSneak", LocalizeString::get("client.textmodule.toggleSprintSneak.toggleSneak.name"),

@@ -59,7 +59,7 @@ if [[ "$failed" -ne 0 ]]; then
     echo "Format individual files with:"
     echo "  clang-format -i path/to/file.cpp"
     echo
-    echo "Or format all Latite sources from PowerShell with:"
+    echo "Or format all Envy sources from PowerShell with:"
     echo "  Get-ChildItem src -Recurse -Include *.h,*.hpp,*.cpp,*.cxx,*.cc | ForEach-Object { clang-format -i \$_.FullName }"
     echo
     echo "Or from Git Bash with:"

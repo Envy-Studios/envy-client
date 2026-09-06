@@ -28,7 +28,7 @@ namespace {
                                                         : Color(1.f, 1.f, 0.f, opacity));
         }
 
-        if (!LatiteMath::aequals(x1, x2)) {
+        if (!EnvyMath::aequals(x1, x2)) {
             // X mode
             // render 8 horizontal
             float myDiff = (x2 - x1) / 8.f;

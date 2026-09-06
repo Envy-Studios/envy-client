@@ -11,9 +11,9 @@ JsModule::JsModule(std::string const& name, std::wstring const& displayName, std
 }
 
 void JsModule::onEnable() {
-    if (!Latite::isMainThread()) {
+    if (!Envy::isMainThread()) {
         // hey lets hope that the js module doesnt disappear by the time this code executes
-        Latite::get().queueForClientThread([this]() {
+        Envy::get().queueForClientThread([this]() {
             Chakra::SetContext(ctx);
             Event ev { L"enable", {} };
             auto ret = dispatchEvent(ev);
@@ -32,9 +32,9 @@ void JsModule::onEnable() {
 }
 
 void JsModule::onDisable() {
-    if (!Latite::isMainThread()) {
+    if (!Envy::isMainThread()) {
         // hey lets hope that the js module doesnt disappear by the time this code executes
-        Latite::get().queueForClientThread([this]() {
+        Envy::get().queueForClientThread([this]() {
             Chakra::SetContext(ctx);
             Event ev { L"disable", {} };
             auto ret = dispatchEvent(ev);
@@ -54,7 +54,7 @@ void JsModule::onDisable() {
 }
 
 bool JsModule::shouldHoldToToggle() {
-    if (!Latite::isMainThread()) {
+    if (!Envy::isMainThread()) {
         return cacheHoldToToggle;
     }
 

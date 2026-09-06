@@ -1,5 +1,5 @@
 #pragma once
 
-namespace LatiteBuild {
+namespace EnvyBuild {
     const char* getTimestamp() noexcept;
 }

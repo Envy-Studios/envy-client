@@ -4,7 +4,7 @@
 #include "client/event/events/UpdateEvent.h"
 #include "client/event/Eventing.h"
 #include "client/script/PluginManager.h"
-#include "client/Latite.h"
+#include "client/Envy.h"
 
 namespace {
     std::shared_ptr<Hook> onDeviceLostHook;
@@ -17,14 +17,14 @@ namespace {
 
         {
             PluginManager::Event sev { L"renderDX", {}, false };
-            Latite::getPluginManager().dispatchEvent(sev);
+            Envy::getPluginManager().dispatchEvent(sev);
         }
 
         Eventing::get().dispatch(ev);
         END_ERROR_HANDLER
     }
 
-#ifdef LATITE_CRASH_REPORTING
+#ifdef ENVY_CRASH_REPORTING
     void __cdecl updateSehThunk(void* context) {
         updateImpl(static_cast<SDK::MinecraftGame*>(context));
     }
@@ -40,7 +40,7 @@ void MinecraftGameHooks::onDeviceLost(SDK::MinecraftGame* game) {
 }
 
 void __fastcall MinecraftGameHooks::_update(SDK::MinecraftGame* game) {
-#ifdef LATITE_CRASH_REPORTING
+#ifdef ENVY_CRASH_REPORTING
     DebugExceptionHandler::RunVoidWithSehGuard(updateSehThunk, game,
                                                "Caught SEH exception in MinecraftGame::_update hook");
 #else

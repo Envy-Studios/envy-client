@@ -2,8 +2,8 @@ if (NOT DEFINED OUTPUT_FILE OR OUTPUT_FILE STREQUAL "")
     message(FATAL_ERROR "OUTPUT_FILE is required")
 endif ()
 
-if (DEFINED LATITE_BUILD_TIMESTAMP AND NOT LATITE_BUILD_TIMESTAMP STREQUAL "")
-    set(build_timestamp "${LATITE_BUILD_TIMESTAMP}")
+if (DEFINED ENVY_BUILD_TIMESTAMP AND NOT ENVY_BUILD_TIMESTAMP STREQUAL "")
+    set(build_timestamp "${ENVY_BUILD_TIMESTAMP}")
 else ()
     string(TIMESTAMP build_timestamp "%Y-%m-%d_%H-%M-%SZ" UTC)
 endif ()
@@ -19,8 +19,8 @@ file(MAKE_DIRECTORY "${output_directory}")
 file(WRITE "${OUTPUT_FILE}"
 "#include \"client/BuildTimestamp.h\"\n\
 \n\
-const char* LatiteBuild::getTimestamp() noexcept {\n\
-#if defined(LATITE_DEBUG) || defined(LATITE_NIGHTLY)\n\
+const char* EnvyBuild::getTimestamp() noexcept {\n\
+#if defined(ENVY_DEBUG) || defined(ENVY_NIGHTLY)\n\
     return \"${build_timestamp}\";\n\
 #else\n\
     return \"0000-00-00_00-00-00Z\";\n\

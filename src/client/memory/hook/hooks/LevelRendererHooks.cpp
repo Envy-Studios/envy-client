@@ -3,7 +3,7 @@
 #include "client/event/Eventing.h"
 #include "client/event/events/RenderLevelEvent.h"
 #include "client/render/Renderer.h"
-#include "client/Latite.h"
+#include "client/Envy.h"
 
 namespace {
     std::shared_ptr<Hook> renderLevelHook;
@@ -14,7 +14,7 @@ void LevelRendererHooks::LevelRenderer_renderLevel(SDK::LevelRenderer* lvl, SDK:
 
     {
         PluginManager::Event ev { L"render3d", {}, true };
-        if (Latite::getPluginManager().dispatchEvent(ev)) {
+        if (Envy::getPluginManager().dispatchEvent(ev)) {
             return;
         }
     }

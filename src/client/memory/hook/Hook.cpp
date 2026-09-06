@@ -8,7 +8,7 @@ Hook::Hook(uintptr_t targetAddress, void* detourFunc, std::string const& hookNam
     : funcPtr(nullptr)
     , detour(detourFunc)
     ,
-#ifdef LATITE_DEBUG
+#ifdef ENVY_DEBUG
     funcName(hookName)
     ,
 #else
@@ -21,7 +21,7 @@ Hook::Hook(uintptr_t targetAddress, void* detourFunc, std::string const& hookNam
     if (tableSwap) {
         auto res = vh::hook(reinterpret_cast<LPVOID*>(targetAddress), detourFunc, &this->funcPtr);
         if (res != 0) {
-#ifdef LATITE_DEBUG
+#ifdef ENVY_DEBUG
             Logger::Warn("Creation of hook {} failed with status {}", this->funcName, vh::status_to_string(res));
 #endif
         }
@@ -30,14 +30,14 @@ Hook::Hook(uintptr_t targetAddress, void* detourFunc, std::string const& hookNam
 
     MH_STATUS res = MH_CreateHook(reinterpret_cast<LPVOID>(targetAddress), detourFunc, &this->funcPtr);
     if (res != MH_OK) {
-#ifdef LATITE_DEBUG
+#ifdef ENVY_DEBUG
         Logger::Warn("Creation of hook {} failed with status {}", this->funcName, MH_StatusToString(res));
 #endif
     }
 }
 
 HookGroup::HookGroup(std::string const& groupName)
-#ifdef LATITE_DEBUG
+#ifdef ENVY_DEBUG
     : groupName(groupName)
 #else
     // hopefully the name gets optimized away
@@ -47,7 +47,7 @@ HookGroup::HookGroup(std::string const& groupName)
 }
 
 std::shared_ptr<Hook> HookGroup::addHook(uintptr_t ptr, func_ptr_t detour, const char* name) {
-#ifdef LATITE_DEBUG
+#ifdef ENVY_DEBUG
     auto newHook = std::make_shared<Hook>(ptr, detour, name);
 #else
     auto newHook = std::make_shared<Hook>(ptr, detour, "");
@@ -57,7 +57,7 @@ std::shared_ptr<Hook> HookGroup::addHook(uintptr_t ptr, func_ptr_t detour, const
 }
 
 std::shared_ptr<Hook> HookGroup::addTableSwapHook(uintptr_t ptr, func_ptr_t detour, const char* name) {
-#ifdef LATITE_DEBUG
+#ifdef ENVY_DEBUG
     auto newHook = std::make_shared<Hook>(ptr, detour, name, true);
 #else
     auto newHook = std::make_shared<Hook>(ptr, detour, "", true);

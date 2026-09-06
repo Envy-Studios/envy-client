@@ -13,7 +13,7 @@ namespace {
     constexpr std::size_t MINIMUM_TRANSIENT_BASELINE_SAMPLES = 16;
     constexpr std::size_t MINIMUM_REJECTED_GYRO_SAMPLE_LIMIT = 3;
     constexpr std::size_t REJECTED_GYRO_SAMPLE_LIMIT_DIVISOR = 100;
-    constexpr float TRANSIENT_GYRO_DEVIATION_LIMIT = LatiteMath::deg2rad(5.f);
+    constexpr float TRANSIENT_GYRO_DEVIATION_LIMIT = EnvyMath::deg2rad(5.f);
 
     void addCompensated(double value, double& sum, double& correction) {
         double adjustedValue = value - correction;
@@ -265,9 +265,9 @@ GyroCalibration::Result GyroCalibration::finish() const {
         result.peakAngularDeviationMagnitude = result.peakAngularDeviation.magnitude();
     }
 
-    result.standardDeviationLimit = LatiteMath::deg2rad(0.5f);
-    result.peakAngularDeviationLimit = LatiteMath::deg2rad(5.f);
-    result.blockMeanDeltaLimit = LatiteMath::deg2rad(0.05f);
+    result.standardDeviationLimit = EnvyMath::deg2rad(0.5f);
+    result.peakAngularDeviationLimit = EnvyMath::deg2rad(5.f);
+    result.blockMeanDeltaLimit = EnvyMath::deg2rad(0.05f);
     result.measurementDurationSeconds = weightedDurationSeconds_;
     result.sampleCount = sampleCount_;
     result.receivedGyroSampleCount = receivedGyroSampleCount_;

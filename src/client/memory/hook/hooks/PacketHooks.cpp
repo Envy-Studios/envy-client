@@ -50,7 +50,7 @@ void PacketHooks::PacketHandlerDispatcherInstance_handle(void* instance, void* n
     }
     if (!hook) return;
 
-    const bool isMainThread = Latite::isMainThread();
+    const bool isMainThread = Envy::isMainThread();
     std::shared_ptr<SDK::Packet> postVanillaPacket = isMainThread ? packet : nullptr;
 
     if (isMainThread) {
@@ -67,7 +67,7 @@ void PacketHooks::PacketHandlerDispatcherInstance_handle(void* instance, void* n
             formJson.val = util::StrToWStr(pkt->mFormJSON);
 
             PluginManager::Event sEv { L"modal-form-request", { formId, formJson }, false };
-            if (Latite::getPluginManager().dispatchEvent(sEv)) return;
+            if (Envy::getPluginManager().dispatchEvent(sEv)) return;
         } else if (packetId == SDK::PacketID::SET_TITLE) {
             auto pkt = std::static_pointer_cast<SDK::SetTitlePacket>(packet);
             auto v1 = PluginManager::Event::Value(L"type");
@@ -108,7 +108,7 @@ void PacketHooks::PacketHandlerDispatcherInstance_handle(void* instance, void* n
             v2.val = util::StrToWStr(pkt->text);
 
             PluginManager::Event ev(L"title", { v1, v2 }, true);
-            if (Latite::getPluginManager().dispatchEvent(ev)) {
+            if (Envy::getPluginManager().dispatchEvent(ev)) {
                 pkt->type = SDK::TitleType::Clear;
             }
         } else if (packetId == SDK::PacketID::TEXT) {
@@ -171,7 +171,7 @@ void PacketHooks::PacketHandlerDispatcherInstance_handle(void* instance, void* n
                  pkt->type == SDK::TextPacketType::TEXT_OBJECT_ANNOUNCEMENT);
 
             PluginManager::Event sEv { L"receive-chat", { typ, val, val2, val3, isChat }, true };
-            if (Latite::getPluginManager().dispatchEvent(sEv)) {
+            if (Envy::getPluginManager().dispatchEvent(sEv)) {
                 return;
             }
 
@@ -180,9 +180,9 @@ void PacketHooks::PacketHandlerDispatcherInstance_handle(void* instance, void* n
                 return;
             }
         } else if (packetId == SDK::PacketID::CHANGE_DIMENSION) {
-            Latite::get().getNameTagCache().clearActorNameTags();
+            Envy::get().getNameTagCache().clearActorNameTags();
             PluginManager::Event sEv { L"change-dimension", {}, false };
-            Latite::getPluginManager().dispatchEvent(sEv);
+            Envy::getPluginManager().dispatchEvent(sEv);
         } else if (packetId == SDK::PacketID::SET_SCORE) {
             std::shared_ptr<SDK::SetScorePacket> pkt = std::static_pointer_cast<SDK::SetScorePacket>(packet);
 
@@ -190,10 +190,10 @@ void PacketHooks::PacketHandlerDispatcherInstance_handle(void* instance, void* n
             data.val = pkt->serialize();
 
             PluginManager::Event sEv { L"set-score", { data }, false };
-            Latite::getPluginManager().dispatchEvent(sEv);
+            Envy::getPluginManager().dispatchEvent(sEv);
         } else if (packetId == SDK::PacketID::TRANSFER) {
             PluginManager::Event sEv { L"transfer", {}, false };
-            Latite::getPluginManager().dispatchEvent(sEv);
+            Envy::getPluginManager().dispatchEvent(sEv);
         }
     }
 

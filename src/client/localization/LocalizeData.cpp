@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <cctype>
 #include "LocalizeData.h"
-#include <client/Latite.h>
+#include <client/Envy.h>
 #include "client/resource/Resource.h"
 #include "client/resource/InitResources.h"
 
@@ -249,7 +249,7 @@ int LocalizeData::getSystemDefaultLanguageIndex() const {
 }
 
 bool LocalizeData::isSelectedLanguageRightToLeft() const {
-    const int selectedLanguage = Latite::get().getSelectedLanguage();
+    const int selectedLanguage = Envy::get().getSelectedLanguage();
     if (selectedLanguage < 0 || selectedLanguage >= static_cast<int>(languages.size())) {
         return false;
     }
@@ -258,7 +258,7 @@ bool LocalizeData::isSelectedLanguageRightToLeft() const {
 }
 
 std::wstring LocalizeData::get(const std::string& id) {
-    auto& lang = *languages.at(Latite::get().getSelectedLanguage());
+    auto& lang = *languages.at(Envy::get().getSelectedLanguage());
     return tryGetKey(lang, id).value_or(tryGetKey(*fallbackLanguage, id).value_or(util::StrToWStr(id)));
 }
 

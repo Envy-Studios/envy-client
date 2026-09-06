@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "DrawContext.h"
-#include "client/Latite.h"
+#include "client/Envy.h"
 #include "Util.h"
 #include "mc/common/client/renderer/Tessellator.h"
 #include "mc/common/client/renderer/MeshUtils.h"
@@ -24,7 +24,7 @@ static size_t countof(auto str, auto ch) {
     return c;
 }
 
-#ifdef LATITE_DEBUG
+#ifdef ENVY_DEBUG
 static d2d::Color getDebugTextRectColor(bool overflow) {
     return overflow ? d2d::Color::RGB(0xFF, 0x35, 0x35).asAlpha(0.95f)
                     : d2d::Color::RGB(0x22, 0xD7, 0xFF).asAlpha(0.75f);
@@ -38,7 +38,7 @@ static bool isDebugTextOverflow(Vec2 const& textSize, d2d::Rect const& rect) {
 
 static DWRITE_READING_DIRECTION getSelectedTextReadingDirection() {
     try {
-        return Latite::get().getL10nData().isSelectedLanguageRightToLeft() ? DWRITE_READING_DIRECTION_RIGHT_TO_LEFT
+        return Envy::get().getL10nData().isSelectedLanguageRightToLeft() ? DWRITE_READING_DIRECTION_RIGHT_TO_LEFT
                                                                            : DWRITE_READING_DIRECTION_LEFT_TO_RIGHT;
     } catch (...) {
         return DWRITE_READING_DIRECTION_LEFT_TO_RIGHT;
@@ -182,11 +182,11 @@ void D2DUtil::fillRoundedRectangle(RectF const& rect, ID2D1Brush* cbrush, float 
 }
 
 void D2DUtil::drawGaussianBlur(float intensity) {
-    ID2D1Effect* gaussianBlurEffect = Latite::getRenderer().getBlurEffect();
+    ID2D1Effect* gaussianBlurEffect = Envy::getRenderer().getBlurEffect();
 
     // maybe we might not need to flush if we dont draw anything before clickgui?
     ctx->Flush();
-    auto bitmap = Latite::getRenderer().getBlurBitmap();
+    auto bitmap = Envy::getRenderer().getBlurBitmap();
     gaussianBlurEffect->SetInput(0, bitmap);
     gaussianBlurEffect->SetValue(D2D1_GAUSSIANBLUR_PROP_STANDARD_DEVIATION, intensity);
     gaussianBlurEffect->SetValue(D2D1_GAUSSIANBLUR_PROP_BORDER_MODE, D2D1_BORDER_MODE_HARD);
@@ -199,10 +199,10 @@ void D2DUtil::drawGaussianBlur(float intensity) {
 }
 
 void D2DUtil::drawGaussianBlur(ID2D1Bitmap1* bmp, float intensity) {
-    ID2D1Effect* gaussianBlurEffect = Latite::getRenderer().getBlurEffect();
+    ID2D1Effect* gaussianBlurEffect = Envy::getRenderer().getBlurEffect();
 
     ctx->Flush();
-    Latite::getRenderer().getCopiedBitmap(bmp);
+    Envy::getRenderer().getCopiedBitmap(bmp);
     gaussianBlurEffect->SetInput(0, bmp);
     gaussianBlurEffect->SetValue(D2D1_GAUSSIANBLUR_PROP_STANDARD_DEVIATION, intensity);
     gaussianBlurEffect->SetValue(D2D1_GAUSSIANBLUR_PROP_BORDER_MODE, D2D1_BORDER_MODE_HARD);
@@ -217,9 +217,9 @@ void D2DUtil::drawGaussianBlur(ID2D1Bitmap1* bmp, float intensity) {
 void D2DUtil::drawText(RectF const& rc, std::wstring const& ws, d2d::Color const& color, Renderer::FontSelection font,
                        float size, DWRITE_TEXT_ALIGNMENT alignment, DWRITE_PARAGRAPH_ALIGNMENT verticalAlignment,
                        bool cache, bool hyphen) {
-    ComPtr<IDWriteTextFormat> fmt = Latite::getRenderer().getTextFormat(font);
+    ComPtr<IDWriteTextFormat> fmt = Envy::getRenderer().getTextFormat(font);
     brush->SetColor(color.get());
-    auto layout = Latite::getRenderer().getLayout(fmt.Get(), ws, cache);
+    auto layout = Envy::getRenderer().getLayout(fmt.Get(), ws, cache);
     if (layout.Get()) {
         layout->SetMaxWidth(rc.getWidth());
         layout->SetMaxHeight(rc.getHeight());
@@ -231,8 +231,8 @@ void D2DUtil::drawText(RectF const& rc, std::wstring const& ws, d2d::Color const
         layout->SetTextAlignment(alignment);
         layout->SetParagraphAlignment(verticalAlignment);
         this->ctx->DrawTextLayout({ rc.getPos().x, rc.getPos().y }, layout.Get(), brush);
-#ifdef LATITE_DEBUG
-        if (Latite::get().shouldRenderDebugTextRects()) {
+#ifdef ENVY_DEBUG
+        if (Envy::get().shouldRenderDebugTextRects()) {
             DWRITE_TEXT_METRICS metrics {};
             layout->GetMetrics(&metrics);
             bool overflow = isDebugTextOverflow({ metrics.widthIncludingTrailingWhitespace, metrics.height }, rc);
@@ -244,9 +244,9 @@ void D2DUtil::drawText(RectF const& rc, std::wstring const& ws, d2d::Color const
 
 Vec2 D2DUtil::getTextSize(std::wstring const& ws, Renderer::FontSelection font, float size, bool tw, bool cache,
                           std::optional<Vec2> bounds) {
-    ComPtr<IDWriteTextFormat> fmt = Latite::getRenderer().getTextFormat(font);
+    ComPtr<IDWriteTextFormat> fmt = Envy::getRenderer().getTextFormat(font);
     auto ss = ctx->GetPixelSize();
-    auto layout = Latite::getRenderer().getLayout(fmt.Get(), ws, cache);
+    auto layout = Envy::getRenderer().getLayout(fmt.Get(), ws, cache);
     if (layout.Get()) {
         if (!bounds.has_value()) {
             layout->SetMaxWidth(static_cast<float>(ss.width));
@@ -343,9 +343,9 @@ std::wstring D2DUtil::ellipsizeToWidth(std::wstring text, Renderer::FontSelectio
 
 d2d::Rect D2DUtil::getTextRect(std::wstring const& ws, Renderer::FontSelection font, float size, float pad,
                                bool cache) {
-    ComPtr<IDWriteTextFormat> fmt = Latite::getRenderer().getTextFormat(font);
+    ComPtr<IDWriteTextFormat> fmt = Envy::getRenderer().getTextFormat(font);
     auto ss = ctx->GetPixelSize();
-    auto layout = Latite::getRenderer().getLayout(fmt.Get(), ws, cache);
+    auto layout = Envy::getRenderer().getLayout(fmt.Get(), ws, cache);
     if (layout.Get()) {
         layout->SetMaxWidth(static_cast<float>(ss.width));
         layout->SetMaxHeight(static_cast<float>(ss.height));
@@ -370,9 +370,9 @@ d2d::Rect D2DUtil::getTextRect(std::wstring const& ws, Renderer::FontSelection f
 }
 
 D2DUtil::D2DUtil()
-    : brush(Latite::getRenderer().getSolidBrush())
-    , ctx(Latite::getRenderer().getDeviceContext())
-    , factory(Latite::getRenderer().getDWriteFactory()) {
+    : brush(Envy::getRenderer().getSolidBrush())
+    , ctx(Envy::getRenderer().getDeviceContext())
+    , factory(Envy::getRenderer().getDWriteFactory()) {
 }
 
 SDK::RectangleArea MCDrawUtil::getRect(d2d::Rect const& rc) {
@@ -655,7 +655,7 @@ void MCDrawUtil::fillPolygon(Vec2 const& center, float radius, int numSides, d2d
     // tess->vertex(center.x + 5.f, center.y + 7.34f);
     float angle = (2.0f * pi_f) / static_cast<float>(numSides);
 
-    constexpr float myNinetyDeg = LatiteMath::deg2rad(90.f);
+    constexpr float myNinetyDeg = EnvyMath::deg2rad(90.f);
 
     tess->begin(SDK::Primitive::Trianglestrip, numSides * 2);
     for (float i = 0; i <= static_cast<float>(numSides); ++i) {
@@ -735,10 +735,10 @@ void MCDrawUtil::fillRoundedRectangle(RectF const& rc, d2d::Color const& col, fl
         }
     };
 
-    drawCorner({ rect.left + radius, rect.top + radius }, LatiteMath::deg2rad(180.f), LatiteMath::deg2rad(270.f));
-    drawCorner({ rect.right - radius, rect.top + radius }, LatiteMath::deg2rad(270.f), LatiteMath::deg2rad(360.f));
-    drawCorner({ rect.right - radius, rect.bottom - radius }, LatiteMath::deg2rad(0.f), LatiteMath::deg2rad(90.f));
-    drawCorner({ rect.left + radius, rect.bottom - radius }, LatiteMath::deg2rad(90.f), LatiteMath::deg2rad(180.f));
+    drawCorner({ rect.left + radius, rect.top + radius }, EnvyMath::deg2rad(180.f), EnvyMath::deg2rad(270.f));
+    drawCorner({ rect.right - radius, rect.top + radius }, EnvyMath::deg2rad(270.f), EnvyMath::deg2rad(360.f));
+    drawCorner({ rect.right - radius, rect.bottom - radius }, EnvyMath::deg2rad(0.f), EnvyMath::deg2rad(90.f));
+    drawCorner({ rect.left + radius, rect.bottom - radius }, EnvyMath::deg2rad(90.f), EnvyMath::deg2rad(180.f));
 
     tess->vertex(rect.left, rect.top + radius);
     tess->vertex(rect.centerX(), rect.centerY());
@@ -775,10 +775,10 @@ void MCDrawUtil::drawRoundedRectangle(RectF rect, d2d::Color const& color, float
         }
     };
 
-    drawCorner({ rect.left + radius, rect.top + radius }, LatiteMath::deg2rad(180.f), LatiteMath::deg2rad(270.f));
-    drawCorner({ rect.right - radius, rect.top + radius }, LatiteMath::deg2rad(270.f), LatiteMath::deg2rad(360.f));
-    drawCorner({ rect.right - radius, rect.bottom - radius }, LatiteMath::deg2rad(0.f), LatiteMath::deg2rad(90.f));
-    drawCorner({ rect.left + radius, rect.bottom - radius }, LatiteMath::deg2rad(90.f), LatiteMath::deg2rad(180.f));
+    drawCorner({ rect.left + radius, rect.top + radius }, EnvyMath::deg2rad(180.f), EnvyMath::deg2rad(270.f));
+    drawCorner({ rect.right - radius, rect.top + radius }, EnvyMath::deg2rad(270.f), EnvyMath::deg2rad(360.f));
+    drawCorner({ rect.right - radius, rect.bottom - radius }, EnvyMath::deg2rad(0.f), EnvyMath::deg2rad(90.f));
+    drawCorner({ rect.left + radius, rect.bottom - radius }, EnvyMath::deg2rad(90.f), EnvyMath::deg2rad(180.f));
 
     tess->vertex(rect.left, rect.top + radius);
     tess->vertex(rect.left + lineThickness, rect.top + radius);
@@ -810,10 +810,10 @@ void MCDrawUtil::drawText(RectF const& rc, std::wstring const& text, d2d::Color 
     renderCtx->drawText(this->font, getRect(rMod), util::WStrToStr(text), color, color.a,
                         (SDK::ui::TextAlignment)alignment,
                         SDK::TextMeasureData((size * guiScale) / this->font->getLineHeight(),
-                                             Latite::get().shouldRenderTextShadows(), false),
+                                             Envy::get().shouldRenderTextShadows(), false),
                         caretMeasure);
-#ifdef LATITE_DEBUG
-    if (Latite::get().shouldRenderDebugTextRects()) {
+#ifdef ENVY_DEBUG
+    if (Envy::get().shouldRenderDebugTextRects()) {
         Vec2 measured = getTextSize(text, font, size, true, false);
         bool overflow = isDebugTextOverflow(measured, rc);
         drawRectangle(rc, getDebugTextRectColor(overflow), overflow ? 1.5f : 1.f);

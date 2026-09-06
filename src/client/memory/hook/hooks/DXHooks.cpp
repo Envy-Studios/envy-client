@@ -1,5 +1,5 @@
 #include "DXHooks.h"
-#include "client/Latite.h"
+#include "client/Envy.h"
 #include "client/render/Renderer.h"
 #include "pch.h"
 
@@ -40,7 +40,7 @@ namespace {
 }
 
 void DXHooks::CheckForceDisableVSync() {
-    isForceDisableVSync = Latite::get().shouldForceDisableVSync();
+    isForceDisableVSync = Envy::get().shouldForceDisableVSync();
 }
 
 void DXHooks::CheckTearingSupport() {
@@ -67,8 +67,8 @@ HRESULT WINAPI DXHooks::CreateSwapChainForHWNDHook(IDXGIFactory2* factory, IUnkn
     if (device) {
         ComPtr<ID3D12CommandQueue> queue;
         if (SUCCEEDED(device->QueryInterface(IID_PPV_ARGS(&queue))) && queue) {
-            auto lock = Latite::getRenderer().lock();
-            Latite::getRenderer().setCommandQueue(queue.Get());
+            auto lock = Envy::getRenderer().lock();
+            Envy::getRenderer().setCommandQueue(queue.Get());
         }
     }
 
@@ -76,12 +76,12 @@ HRESULT WINAPI DXHooks::CreateSwapChainForHWNDHook(IDXGIFactory2* factory, IUnkn
 }
 
 HRESULT __stdcall DXHooks::SwapChain_Present(IDXGISwapChain* chain, UINT SyncInterval, UINT Flags) {
-    auto& renderer = Latite::getRenderer();
+    auto& renderer = Envy::getRenderer();
     bool isGameSwapChain = false;
-    if (Latite::get().isEjectReadyForRenderThread()) {
+    if (Envy::get().isEjectReadyForRenderThread()) {
         auto lock = renderer.lock();
-        Latite::get().completeEjectFromRenderThread();
-    } else if (!Latite::get().isEjectQueued() && !renderer.isResizeInProgress()) {
+        Envy::get().completeEjectFromRenderThread();
+    } else if (!Envy::get().isEjectQueued() && !renderer.isResizeInProgress()) {
         auto lock = renderer.lock();
         if (!renderer.isResizeInProgress()) {
             if (renderer.hasInitialized()) {
@@ -128,20 +128,20 @@ HRESULT __stdcall DXHooks::SwapChain_Present(IDXGISwapChain* chain, UINT SyncInt
 
 HRESULT __stdcall DXHooks::SwapChain_ResizeBuffers(IDXGISwapChain* chain, UINT BufferCount, UINT Width, UINT Height,
                                                    DXGI_FORMAT NewFormat, UINT SwapChainFlags) {
-    Latite::getRenderer().beginResize();
+    Envy::getRenderer().beginResize();
     const HRESULT result = ResizeBuffersHook->oFunc<decltype(&SwapChain_ResizeBuffers)>()(
         chain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
-    Latite::getRenderer().endResize();
+    Envy::getRenderer().endResize();
     return result;
 }
 
 HRESULT __stdcall DXHooks::SwapChain3_ResizeBuffers1(IDXGISwapChain3* chain, UINT BufferCount, UINT Width, UINT Height,
                                                      DXGI_FORMAT NewFormat, UINT SwapChainFlags,
                                                      const UINT* pCreationNodeMask, IUnknown* const* ppPresentQueue) {
-    Latite::getRenderer().beginResize();
+    Envy::getRenderer().beginResize();
     const HRESULT result = ResizeBuffers3Hook->oFunc<decltype(&SwapChain3_ResizeBuffers1)>()(
         chain, BufferCount, Width, Height, NewFormat, SwapChainFlags, pCreationNodeMask, ppPresentQueue);
-    Latite::getRenderer().endResize();
+    Envy::getRenderer().endResize();
     return result;
 }
 
@@ -151,8 +151,8 @@ HRESULT __stdcall DXHooks::CommandQueue_ExecuteCommandLists(ID3D12CommandQueue* 
         auto desc = queue->GetDesc();
         if (desc.Type == D3D12_COMMAND_LIST_TYPE_DIRECT) {
             {
-                auto lock = Latite::getRenderer().lock();
-                Latite::getRenderer().setCommandQueue(queue);
+                auto lock = Envy::getRenderer().lock();
+                Envy::getRenderer().setCommandQueue(queue);
             }
         }
     }
@@ -189,7 +189,7 @@ DXHooks::DXHooks()
     ZeroMemory(&wnd, sizeof(WNDCLASSEX));
 
     wnd.cbSize = sizeof(WNDCLASSEX);
-    wnd.hInstance = Latite::get().dllInst;
+    wnd.hInstance = Envy::get().dllInst;
     wnd.lpszClassName = L"dummywnd";
     wnd.lpfnWndProc = DefWindowProc;
     wnd.lpszMenuName = 0;
@@ -198,7 +198,7 @@ DXHooks::DXHooks()
     RegisterClassExW(&wnd);
 
     HWND hWnd = CreateWindowExW(0, L"dummywnd", L"hi", WS_MINIMIZEBOX, 0, 0, 100, 100, nullptr, nullptr,
-                                Latite::get().dllInst, nullptr);
+                                Envy::get().dllInst, nullptr);
 
     swapChainDesc.OutputWindow = hWnd;
     swapChainDesc.SampleDesc.Count = 1;
@@ -229,7 +229,7 @@ DXHooks::DXHooks()
     }
 
     DestroyWindow(hWnd);
-    UnregisterClassW(L"dummywnd", Latite::get().dllInst);
+    UnregisterClassW(L"dummywnd", Envy::get().dllInst);
 
     ComPtr<IDXGIFactory2> factory2;
     if (SUCCEEDED(factory.As(&factory2))) {

@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "CommandManager.h"
 #include "util/logger.h"
-#include "client/latite.h"
+#include "client/envy.h"
 #include "client/misc/ClientMessageQueue.h"
 #include "util/Util.h"
 
@@ -17,7 +17,7 @@
 //
 
 CommandManager::CommandManager() {
-#if LATITE_DEBUG
+#if ENVY_DEBUG
     this->items.push_back(std::make_shared<TestCommand>());
 #endif
     this->items.push_back(std::make_shared<HelpCommand>());
@@ -26,7 +26,7 @@ CommandManager::CommandManager() {
     this->items.push_back(std::make_shared<ScriptCommand>());
     this->items.push_back(std::make_shared<SetPrefixCommand>());
     this->items.push_back(std::make_shared<ConfigCommand>());
-#if LATITE_DEBUG
+#if ENVY_DEBUG
     this->items.push_back(std::make_shared<SignCommand>());
 #endif
 }
@@ -112,12 +112,12 @@ bool CommandManager::runCommand(std::string const& line) {
                                 pos += strlen("$");
                             }
 
-                            Latite::getClientMessageQueue().push(util::Format("&cUsage: " + usage));
+                            Envy::getClientMessageQueue().push(util::Format("&cUsage: " + usage));
                         }
                         return result;
                     } catch (std::exception& e) {
                         Logger::Warn("An unhandled exception occured while running this command: {}", e.what());
-                        Latite::getClientMessageQueue().push(util::Format(
+                        Envy::getClientMessageQueue().push(util::Format(
                             std::string("&cAn unhandled exception occured while running this command: ") + e.what()));
                         return false;
                     }
@@ -129,7 +129,7 @@ bool CommandManager::runCommand(std::string const& line) {
         return false;
     }
 
-    Latite::getClientMessageQueue().push(
+    Envy::getClientMessageQueue().push(
         util::Format("&cUnknown command: " + (newArgs.empty() ? "" : newArgs[0]) + "."));
     return false;
 }

@@ -1,11 +1,11 @@
 #include "pch.h"
 #include "TextBox.h"
-#include "client/Latite.h"
+#include "client/Envy.h"
 
 namespace {
     bool isRightToLeftText() {
         try {
-            return Latite::get().getL10nData().isSelectedLanguageRightToLeft();
+            return Envy::get().getL10nData().isSelectedLanguageRightToLeft();
         } catch (...) {
             return false;
         }

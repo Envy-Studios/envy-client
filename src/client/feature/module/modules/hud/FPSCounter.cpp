@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "FPSCounter.h"
-#include "client/Latite.h"
+#include "client/Envy.h"
 
 FPSCounter::FPSCounter()
     : TextModule("FPS", LocalizeString::get("client.textmodule.fpsCounter.name"),
@@ -10,6 +10,6 @@ FPSCounter::FPSCounter()
 
 std::wstringstream FPSCounter::text(bool isDefault, bool inEditor) {
     std::wstringstream wss;
-    wss << Latite::get().getTimings().getFPS();
+    wss << Envy::get().getTimings().getFPS();
     return wss;
 }

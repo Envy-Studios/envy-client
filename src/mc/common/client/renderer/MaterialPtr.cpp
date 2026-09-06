@@ -27,7 +27,7 @@ SDK::MaterialPtr* SDK::MaterialPtr::createMaterial(const SDK::HashedString& name
     static class RenderMaterialGroup* materialGroup =
         Signatures::RenderMaterialGroup__common.as_ptr<class RenderMaterialGroup>();
 
-    if (Latite::get().tmp2640Is4240)
+    if (Envy::get().tmp2640Is4240)
         return memory::callVirtual<SDK::MaterialPtr*, const SDK::HashedString&>(materialGroup, 1, name);
 
     std::shared_ptr<SDK::MaterialPtr> buf {};

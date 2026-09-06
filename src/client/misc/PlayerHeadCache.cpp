@@ -117,7 +117,7 @@ namespace {
         std::filesystem::create_directories(path.parent_path(), ec);
         if (ec) return false;
 
-        auto factory = Latite::getRenderer().getImagingFactory();
+        auto factory = Envy::getRenderer().getImagingFactory();
         if (!factory) return false;
 
         std::vector<uint8_t> bgra(rgba.size());
@@ -200,7 +200,7 @@ std::string PlayerHeadCache::getTexturePath(SDK::SerializedSkinRef const& skin) 
     auto head = makePlayerHeadRgba(*image);
     if (head.empty()) return {};
 
-    auto directory = LatiteTemp::resolvePath("PlayerHeads");
+    auto directory = EnvyTemp::resolvePath("PlayerHeads");
     if (directory.empty()) return {};
 
     auto path = directory / std::format("head-{:016x}.png", hash);

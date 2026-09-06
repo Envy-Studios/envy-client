@@ -22,7 +22,7 @@ void D2DScriptingObject::initialize(JsContextRef ctx, JsValueRef parentObj) {
 
 void D2DScriptingObject::onRenderOverlay(Event& ev) {
     auto mLock = this->lock();
-    Latite::getRenderer().getDeviceContext()->GetTransform(&matrix);
+    Envy::getRenderer().getDeviceContext()->GetTransform(&matrix);
     flushOverlay();
 }
 
@@ -40,7 +40,7 @@ void D2DScriptingObject::onUpdate(Event&) {
 void D2DScriptingObject::flushOverlay() {
     auto lk = lock();
     for (auto& operation : operations) {
-        auto ctx = Latite::getRenderer().getDeviceContext();
+        auto ctx = Envy::getRenderer().getDeviceContext();
         D2D1::Matrix3x2F oMat;
         ctx->GetTransform(&oMat);
         ctx->SetTransform(operation.matrix);
@@ -88,7 +88,7 @@ JsValueRef D2DScriptingObject::fillRectCallback(JsValueRef callee, bool isConstr
 
     auto thi = reinterpret_cast<D2DScriptingObject*>(callbackState);
     if (thi->usingMinecraftRend() && thi->cachedCtx) {
-        MCDrawUtil dc { thi->cachedCtx, Latite::get().getFont() };
+        MCDrawUtil dc { thi->cachedCtx, Envy::get().getFont() };
 
         if (radius > 0.001f) {
             dc.fillRoundedRectangle(rect, color, radius);
@@ -119,7 +119,7 @@ JsValueRef D2DScriptingObject::drawRectCallback(JsValueRef callee, bool isConstr
 
     auto thi = reinterpret_cast<D2DScriptingObject*>(callbackState);
     if (thi->usingMinecraftRend() && thi->cachedCtx) {
-        MCDrawUtil dc { thi->cachedCtx, Latite::get().getFont() };
+        MCDrawUtil dc { thi->cachedCtx, Envy::get().getFont() };
         dc.drawRectangle(rect, color, thickness);
         return Chakra::GetUndefined();
     }
@@ -150,7 +150,7 @@ JsValueRef D2DScriptingObject::drawTextCallback(JsValueRef callee, bool isConstr
 
     auto thi = reinterpret_cast<D2DScriptingObject*>(callbackState);
     if (thi->usingMinecraftRend() && thi->cachedCtx) {
-        MCDrawUtil dc { thi->cachedCtx, Latite::get().getFont() };
+        MCDrawUtil dc { thi->cachedCtx, Envy::get().getFont() };
         dc.drawText(rc, text, color, Renderer::FontSelection::PrimaryRegular, size, DWRITE_TEXT_ALIGNMENT_LEADING,
                     DWRITE_PARAGRAPH_ALIGNMENT_NEAR, false);
         dc.flush(true, false);
@@ -191,7 +191,7 @@ JsValueRef D2DScriptingObject::drawTextFullCallback(JsValueRef callee, bool isCo
 
     auto thi = reinterpret_cast<D2DScriptingObject*>(callbackState);
     if (thi->usingMinecraftRend() && thi->cachedCtx) {
-        MCDrawUtil dc { thi->cachedCtx, Latite::get().getFont() };
+        MCDrawUtil dc { thi->cachedCtx, Envy::get().getFont() };
         dc.drawText(rect, text, color, Renderer::FontSelection::PrimaryRegular, size, (DWRITE_TEXT_ALIGNMENT)align,
                     (DWRITE_PARAGRAPH_ALIGNMENT)vertAlign, false);
         dc.flush(true, false);
@@ -228,7 +228,7 @@ JsValueRef D2DScriptingObject::drawImageCallback(JsValueRef callee, bool isConst
 
     auto thi = reinterpret_cast<D2DScriptingObject*>(callbackState);
     if (thi->usingMinecraftRend() && thi->cachedCtx && texture && texture->getTexture()) {
-        MCDrawUtil dc { thi->cachedCtx, Latite::get().getFont() };
+        MCDrawUtil dc { thi->cachedCtx, Envy::get().getFont() };
         dc.drawImage(*texture->getTexture(), pos, { sx, sy }, color);
         return Chakra::GetUndefined();
     }
@@ -250,7 +250,7 @@ JsValueRef D2DScriptingObject::getTextSize(JsValueRef callee, bool isConstructor
 
     Vec2 ts;
     if (obj->usingMinecraftRend()) {
-        MCDrawUtil dc { obj->cachedCtx, Latite::get().getFont() };
+        MCDrawUtil dc { obj->cachedCtx, Envy::get().getFont() };
         ts = dc.getTextSize(txt, Renderer::FontSelection::PrimaryRegular, static_cast<float>(size));
     } else {
         D2DUtil dc {};
@@ -338,7 +338,7 @@ JsValueRef D2DScriptingObject::drawItem(JsValueRef callee, bool isConstructor, J
     auto pos = JsVec2::ToVec2(arguments[2]);
 
     if (thi->usingMinecraftRend()) {
-        MCDrawUtil dc { thi->cachedCtx, Latite::get().getFont() };
+        MCDrawUtil dc { thi->cachedCtx, Envy::get().getFont() };
 
         dc.drawItem(item, pos, static_cast<float>(Chakra::GetNumber(arguments[3])),
                     static_cast<float>(Chakra::GetNumber(arguments[4])));

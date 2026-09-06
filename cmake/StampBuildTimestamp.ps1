@@ -13,7 +13,7 @@ $ErrorActionPreference = "Stop"
 
 if (-not [string]::IsNullOrWhiteSpace($Configuration) -and
     $Configuration -notin @("Debug", "Nightly")) {
-    Write-Host "Skipping Latite UTC build timestamp stamp for $Configuration configuration"
+    Write-Host "Skipping Envy UTC build timestamp stamp for $Configuration configuration"
     return
 }
 
@@ -56,4 +56,4 @@ if ($patchCount -eq 0) {
 }
 
 [IO.File]::WriteAllBytes($BinaryPath, $bytes)
-Write-Host "Stamped Latite UTC build timestamp $Timestamp into $BinaryPath"
+Write-Host "Stamped Envy UTC build timestamp $Timestamp into $BinaryPath"

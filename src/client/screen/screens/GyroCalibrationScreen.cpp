@@ -4,7 +4,7 @@
 #include "client/event/Eventing.h"
 #include "client/event/events/ClickEvent.h"
 #include "client/event/events/RenderOverlayEvent.h"
-#include "client/Latite.h"
+#include "client/Envy.h"
 #include "client/localization/LocalizeString.h"
 #include "client/render/asset/Assets.h"
 #include "util/DrawContext.h"
@@ -81,11 +81,11 @@ void GyroCalibrationScreen::onRender(Event&) {
     if (!isActive()) return;
 
     D2DUtil dc;
-    D2D1_SIZE_F screenSize = Latite::getRenderer().getScreenSize();
+    D2D1_SIZE_F screenSize = Envy::getRenderer().getScreenSize();
     Vec2 cursorPosition = SDK::ClientInstance::get()->cursorPos;
-    d2d::Color accent = d2d::Color(Latite::get().getAccentColor().getMainColor());
+    d2d::Color accent = d2d::Color(Envy::get().getAccentColor().getMainColor());
 
-    if (Latite::get().getMenuBlur()) dc.drawGaussianBlur(Latite::get().getMenuBlur().value());
+    if (Envy::get().getMenuBlur()) dc.drawGaussianBlur(Envy::get().getMenuBlur().value());
 
     float scale = std::clamp(screenSize.width / 1920.f, 0.72f, 1.1f);
     float panelWidth = std::min(screenSize.width * 0.72f, 760.f * scale);
@@ -124,7 +124,7 @@ void GyroCalibrationScreen::onRender(Event&) {
                             deviceText, d2d::Color::RGB(0xD2, 0xD2, 0xD2).asAlpha(0.72f),
                             Renderer::FontSelection::PrimaryRegular, 14.f * scale);
 
-    if (ID2D1Bitmap* closeIcon = Latite::getAssets().xIcon.getBitmap()) {
+    if (ID2D1Bitmap* closeIcon = Envy::getAssets().xIcon.getBitmap()) {
         dc.ctx->DrawBitmap(closeIcon, closeButtonRect, closeButtonRect.contains(cursorPosition) ? 1.f : 0.72f);
     }
 
@@ -176,7 +176,7 @@ void GyroCalibrationScreen::renderPrompt(D2DUtil& dc, float scale) {
 }
 
 void GyroCalibrationScreen::renderProgress(D2DUtil& dc, float scale) {
-    d2d::Color accent = d2d::Color(Latite::get().getAccentColor().getMainColor());
+    d2d::Color accent = d2d::Color(Envy::get().getAccentColor().getMainColor());
     d2d::Color cardColor = d2d::Color::RGB(0x12, 0x12, 0x12).asAlpha(0.62f);
     dc.fillRoundedRectangle(contentRect, cardColor, 13.f * scale);
 

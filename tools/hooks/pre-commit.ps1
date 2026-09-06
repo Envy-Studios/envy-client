@@ -55,7 +55,7 @@ if ($failed) {
     Write-Host "Format individual files with:"
     Write-Host "  clang-format -i path\to\file.cpp"
     Write-Host ""
-    Write-Host "Or format all Latite sources with:"
+    Write-Host "Or format all Envy sources with:"
     Write-Host "  Get-ChildItem src -Recurse -Include *.h,*.hpp,*.cpp,*.cxx,*.cc | ForEach-Object { clang-format -i `$_.FullName }"
     Write-Host ""
     exit 1

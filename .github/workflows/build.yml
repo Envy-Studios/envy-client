@@ -50,17 +50,17 @@ jobs:
       - name: Verify DLL exists
         shell: pwsh
         run: |
-          if (-not (Test-Path "out/build/x64-release/Latite.dll")) {
+          if (-not (Test-Path "out/build/x64-release/Envy.dll")) {
             Get-ChildItem -Recurse out/build/x64-release -Filter *.dll | Format-Table FullName
-            throw "Latite.dll was not produced"
+            throw "Envy.dll was not produced"
           }
-          Get-Item "out/build/x64-release/Latite.dll" | Format-List Name, Length
+          Get-Item "out/build/x64-release/Envy.dll" | Format-List Name, Length
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Latite-dll
-          path: out/build/x64-release/Latite.dll
+          name: Envy-dll
+          path: out/build/x64-release/Envy.dll
           if-no-files-found: error
 
       - name: Create release
@@ -69,7 +69,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $tag = "build-${{ github.run_number }}"
-          gh release create $tag "out/build/x64-release/Latite.dll#Latite.dll" `
+          gh release create $tag "out/build/x64-release/Envy.dll#Envy.dll" `
             --title "Envy Client automated build ($tag)" `
-            --notes "Automated MSVC Release build of ``main`` @ ${{ github.sha }}.`n`nDrop **Latite.dll** into your envy-client DLL loader." `
+            --notes "Automated MSVC Release build of ``main`` @ ${{ github.sha }}.`n`nDrop **Envy.dll** into your envy-client DLL loader." `
             --target ${{ github.sha }}

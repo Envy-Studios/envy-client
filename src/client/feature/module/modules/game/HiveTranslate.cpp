@@ -2,7 +2,7 @@
 #include "util/Util.h"
 #include "util/Logger.h"
 #include "HiveTranslate.h"
-#include "client/Latite.h"
+#include "client/Envy.h"
 #include "client/misc/ServerDetection.h"
 
 #include <regex>
@@ -77,22 +77,22 @@ void HiveTranslate::onText(Event& evG) {
                     util::WStrToStr(LocalizeString::get("client.module.hiveTranslate.translatedFrom")) + " " +
                     originLang + ": " + json[0][0].get<std::string>();
 
-                Latite::get().getClientMessageQueue().push(formattedMsg);
+                Envy::get().getClientMessageQueue().push(formattedMsg);
 
             } catch (nlohmann::json::exception const& err) {
                 std::string msg = "HiveTranslate: HTTP request failed: " + std::string(err.what());
                 Logger::Warn(msg);
-                Latite::getClientMessageQueue().push(msg);
+                Envy::getClientMessageQueue().push(msg);
             } catch (winrt::hresult_error const& err) {
                 std::string msg = "HiveTranslate: HTTP request failed: " + winrt::to_string(err.message());
                 Logger::Warn(msg);
-                Latite::getClientMessageQueue().push(msg);
+                Envy::getClientMessageQueue().push(msg);
             }
         });
 
     } catch (winrt::hresult_error const& err) {
         std::string msg = "HiveTranslate: HTTP request failed: " + winrt::to_string(err.message());
         Logger::Warn(msg);
-        Latite::getClientMessageQueue().push(msg);
+        Envy::getClientMessageQueue().push(msg);
     }
 }
