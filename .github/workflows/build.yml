@@ -1,0 +1,75 @@
+name: Build DLL
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC (x64)
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      # The CMake embedded-assets step invokes `ld.exe -r -b binary`.
+      # That ld comes from MinGW, so make sure it is on PATH.
+      - name: Ensure MinGW ld.exe on PATH
+        shell: pwsh
+        run: |
+          $candidates = @(
+            "C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin",
+            "C:\ProgramData\mingw64\mingw64\bin",
+            "C:\mingw64\bin"
+          ) | Where-Object { Test-Path (Join-Path $_ "ld.exe") }
+
+          if (-not $candidates) {
+            Write-Host "ld.exe not found, installing MinGW via Chocolatey..."
+            choco install mingw -y --no-progress
+            $candidates = @("C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin")
+          }
+
+          $ld = Join-Path ($candidates | Select-Object -First 1) "ld.exe"
+          Write-Host "Using ld.exe: $ld"
+          & $ld --version | Select-Object -First 1
+          Add-Content $env:GITHUB_PATH ($candidates | Select-Object -First 1)
+
+      - name: Configure (x64 Release preset)
+        run: cmake --preset x64-release
+
+      - name: Build
+        run: cmake --build out/build/x64-release --parallel
+
+      - name: Verify DLL exists
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "out/build/x64-release/Latite.dll")) {
+            Get-ChildItem -Recurse out/build/x64-release -Filter *.dll | Format-Table FullName
+            throw "Latite.dll was not produced"
+          }
+          Get-Item "out/build/x64-release/Latite.dll" | Format-List Name, Length
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Latite-dll
+          path: out/build/x64-release/Latite.dll
+          if-no-files-found: error
+
+      - name: Create release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "build-${{ github.run_number }}"
+          gh release create $tag "out/build/x64-release/Latite.dll#Latite.dll" `
+            --title "Envy Client automated build ($tag)" `
+            --notes "Automated MSVC Release build of ``main`` @ ${{ github.sha }}.`n`nDrop **Latite.dll** into your envy-client DLL loader." `
+            --target ${{ github.sha }}
