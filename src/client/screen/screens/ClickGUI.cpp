@@ -199,7 +199,6 @@ void ClickGUI::onRender(Event&) {
     }
 
     rect = { guiX, guiY, ss.width - guiX, ss.height - guiY };
-    float guiWidth = rect.getWidth();
     const bool rtl = Envy::get().getL10nData().isSelectedLanguageRightToLeft();
 
     if (Envy::get().getMenuBlur())
@@ -237,6 +236,181 @@ void ClickGUI::onRender(Event&) {
     // Menu Rect
     dc.fillRoundedRectangle(rect, rcColor, 8.f * adaptedScale);
 
+    // Category rail (sidebar) + content area bounds
+    RectF contentRect {};
+    {
+        float railMargin = 10.f * adaptedScale;
+        float railW = 62.f * adaptedScale;
+        RectF railRect =
+            rtl ? RectF { rect.right - railMargin - railW, rect.top + railMargin, rect.right - railMargin,
+                          rect.bottom - railMargin }
+                : RectF { rect.left + railMargin, rect.top + railMargin, rect.left + railMargin + railW,
+                          rect.bottom - railMargin };
+
+        dc.fillRoundedRectangle(railRect, d2d::Color::RGB(0xFF, 0xFF, 0xFF).asAlpha(0.045f), 8.f * adaptedScale);
+
+        contentRect = rtl ? RectF { rect.left, rect.top, railRect.left - railMargin, rect.bottom }
+                          : RectF { railRect.right + railMargin, rect.top, rect.right, rect.bottom };
+
+        struct RailIcon {
+            const char* labelKey;
+            Asset* icon;
+            ClickGUI::ModTab tab;
+            float lerpHover;
+            float lerpActive;
+        };
+
+        static std::vector<RailIcon> railIcons = {
+            { "client.ui.clickGui.tab.all.name", &Envy::getAssets().tabAllIcon, ALL, 0.f, 0.f },
+            { "client.ui.clickGui.tab.game.name", &Envy::getAssets().tabGameIcon, GAME, 0.f, 0.f },
+            { "client.ui.clickGui.tab.hud.name", &Envy::getAssets().tabHudIcon, HUD, 0.f, 0.f },
+            { "client.ui.clickGui.tab.plugins.name", &Envy::getAssets().tabPluginsIcon, SCRIPT, 0.f, 0.f },
+        };
+
+        float dt = Envy::getRenderer().getDeltaTime();
+        float iconHit = 40.f * adaptedScale;
+        float iconPad = 10.f * adaptedScale;
+        float iconSize = 20.f * adaptedScale;
+
+        float railY = railRect.top + iconPad;
+        for (auto& entry : railIcons) {
+            RectF hitRect { railRect.left, railY, railRect.right, railY + iconHit };
+            railY += iconHit + 4.f * adaptedScale;
+
+            bool hover = shouldSelect(hitRect, cursorPos);
+            bool active = this->tab == MODULES && this->modTab == entry.tab;
+
+            entry.lerpHover = std::lerp(entry.lerpHover, (hover && !active) ? 1.f : 0.f, dt * 0.3f);
+            entry.lerpActive = std::lerp(entry.lerpActive, active ? 1.f : 0.f, dt * 0.3f);
+
+            if (hover) setTooltip(LocalizeString::get(entry.labelKey));
+
+            if (justClicked[0] && hover) {
+                playClickSound();
+                this->tab = MODULES;
+                this->modTab = entry.tab;
+                this->scroll = 0.f;
+                this->lerpScroll = 0.f;
+            }
+
+            RectF pillRect { hitRect.left + 3.f * adaptedScale, hitRect.top + 2.5f * adaptedScale,
+                             hitRect.right - 3.f * adaptedScale, hitRect.bottom - 2.5f * adaptedScale };
+
+            if (entry.lerpHover > 0.01f)
+                dc.fillRoundedRectangle(pillRect, d2d::Color::RGB(0xFF, 0xFF, 0xFF).asAlpha(0.07f * entry.lerpHover),
+                                        8.f * adaptedScale);
+            if (entry.lerpActive > 0.01f)
+                dc.fillRoundedRectangle(pillRect, accentColor.asAlpha(0.92f * entry.lerpActive), 8.f * adaptedScale);
+
+            auto bmp = entry.icon->getBitmap();
+            auto bmpSize = bmp->GetPixelSize();
+            float aspect = static_cast<float>(bmpSize.height) / static_cast<float>(bmpSize.width);
+            float iconW = iconSize;
+            float iconH = iconSize * aspect;
+            if (iconH > iconSize) {
+                iconH = iconSize;
+                iconW = iconSize / aspect;
+            }
+            Vec2 iconCenter = hitRect.center();
+            float iconOpacity = std::clamp(0.55f + 0.45f * std::max(entry.lerpHover, entry.lerpActive), 0.f, 1.f);
+            dc.ctx->DrawBitmap(bmp,
+                               RectF { iconCenter.x - iconW / 2.f, iconCenter.y - iconH / 2.f, iconCenter.x + iconW / 2.f,
+                                       iconCenter.y + iconH / 2.f },
+                               iconOpacity);
+        }
+
+        // divider above the utility buttons
+        float dividerY = railRect.bottom - iconPad - iconHit * 2.f - 10.f * adaptedScale;
+        dc.fillRectangle({ railRect.left + 9.f * adaptedScale, dividerY, railRect.right - 9.f * adaptedScale,
+                           dividerY + 1.f * adaptedScale },
+                         d2d::Color::RGB(0xFF, 0xFF, 0xFF).asAlpha(0.08f));
+
+        float utilBottom = railRect.bottom - iconPad - iconHit;
+
+        // client settings
+        {
+            static float cogHover = 0.f;
+            RectF hitRect { railRect.left, utilBottom, railRect.right, utilBottom + iconHit };
+            bool hover = shouldSelect(hitRect, cursorPos);
+            bool active = this->tab == SETTINGS;
+
+            cogHover = std::lerp(cogHover, (hover || active) ? 1.f : 0.f, dt * 0.3f);
+
+            if (hover) setTooltip(LocalizeString::get("client.ui.clickGui.openSettings.desc"));
+
+            if (justClicked[0] && hover) {
+                playClickSound();
+                this->tab = active ? MODULES : SETTINGS;
+                this->scroll = 0.f;
+                this->lerpScroll = 0.f;
+            }
+
+            RectF pillRect { hitRect.left + 3.f * adaptedScale, hitRect.top + 2.5f * adaptedScale,
+                             hitRect.right - 3.f * adaptedScale, hitRect.bottom - 2.5f * adaptedScale };
+            if (active)
+                dc.fillRoundedRectangle(pillRect, accentColor.asAlpha(0.92f), 8.f * adaptedScale);
+            else if (cogHover > 0.01f)
+                dc.fillRoundedRectangle(pillRect, d2d::Color::RGB(0xFF, 0xFF, 0xFF).asAlpha(0.07f * cogHover),
+                                        8.f * adaptedScale);
+
+            auto bmp = Envy::getAssets().cogIcon.getBitmap();
+            auto bmpSize = bmp->GetPixelSize();
+            float aspect = static_cast<float>(bmpSize.height) / static_cast<float>(bmpSize.width);
+            float iconW = iconSize;
+            float iconH = iconSize * aspect;
+            if (iconH > iconSize) {
+                iconH = iconSize;
+                iconW = iconSize / aspect;
+            }
+            Vec2 iconCenter = hitRect.center();
+            float iconOpacity = active ? 1.f : std::clamp(0.55f + 0.45f * cogHover, 0.f, 1.f);
+            dc.ctx->DrawBitmap(bmp,
+                               RectF { iconCenter.x - iconW / 2.f, iconCenter.y - iconH / 2.f, iconCenter.x + iconW / 2.f,
+                                       iconCenter.y + iconH / 2.f },
+                               iconOpacity);
+        }
+
+        // HUD editor
+        {
+            static float hudHover = 0.f;
+            RectF hitRect { railRect.left, utilBottom - iconHit - 4.f * adaptedScale, railRect.right,
+                            utilBottom - 4.f * adaptedScale };
+            bool hover = shouldSelect(hitRect, cursorPos);
+
+            hudHover = std::lerp(hudHover, hover ? 1.f : 0.f, dt * 0.3f);
+
+            if (hover) setTooltip(LocalizeString::get("client.ui.clickGui.openHudEditor.desc"));
+
+            if (justClicked[0] && hover) {
+                playClickSound();
+                close();
+                Envy::getScreenManager().showScreen<HUDEditor>(true);
+            }
+
+            if (hudHover > 0.01f)
+                dc.fillRoundedRectangle(
+                    { hitRect.left + 3.f * adaptedScale, hitRect.top + 2.5f * adaptedScale,
+                      hitRect.right - 3.f * adaptedScale, hitRect.bottom - 2.5f * adaptedScale },
+                    d2d::Color::RGB(0xFF, 0xFF, 0xFF).asAlpha(0.07f * hudHover), 8.f * adaptedScale);
+
+            auto bmp = Envy::getAssets().hudEditIcon.getBitmap();
+            auto bmpSize = bmp->GetPixelSize();
+            float aspect = static_cast<float>(bmpSize.height) / static_cast<float>(bmpSize.width);
+            float iconW = iconSize;
+            float iconH = iconSize * aspect;
+            if (iconH > iconSize) {
+                iconH = iconSize;
+                iconW = iconSize / aspect;
+            }
+            Vec2 iconCenter = hitRect.center();
+            float iconOpacity = std::clamp(0.55f + 0.45f * hudHover, 0.f, 1.f);
+            dc.ctx->DrawBitmap(bmp,
+                               RectF { iconCenter.x - iconW / 2.f, iconCenter.y - iconH / 2.f, iconCenter.x + iconW / 2.f,
+                                       iconCenter.y + iconH / 2.f },
+                               iconOpacity);
+        }
+    }
+
     float offX = 0.01689f * rect.getWidth();
     float offY = 0.03191f * rect.getHeight();
     float imgSize = 0.05338f * rect.getWidth();
@@ -250,9 +424,9 @@ void ClickGUI::onRender(Event&) {
         float titleSize = 25.f * adaptedScale;
         std::wstring titleText = L"\x202A" L"Envy Client\x202C";
         float titleWidth = 500.f * adaptedScale;
-        RectF titleRect = rtl ? RectF { rect.right - offX - titleWidth, rect.top + offY, rect.right - offX,
+        RectF titleRect = rtl ? RectF { contentRect.right - offX - titleWidth, rect.top + offY, contentRect.right - offX,
                                         rect.top + offY + realLogoHeight }
-                              : RectF { rect.left + offX, rect.top + offY, rect.left + offX + titleWidth,
+                              : RectF { contentRect.left + offX, rect.top + offY, contentRect.left + offX + titleWidth,
                                         rect.top + offY + realLogoHeight };
         dc.drawText(titleRect, titleText, d2d::Color(1.f, 1.f, 1.f, 1.f), FontSelection::PrimaryLight, titleSize,
                     DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_CENTER, false);
@@ -279,75 +453,20 @@ void ClickGUI::onRender(Event&) {
             }
         }
 
-        float betw = rect.getWidth() * 0.01795f;
-        if (tab == SETTINGS) {
-            RectF backArrowRect =
-                rtl ? RectF { xRect.right + betw, xRect.top, xRect.right + betw + xWidth, xRect.bottom }
-                    : RectF { xRect.left - betw - xWidth, xRect.top, xRect.left - betw, xRect.bottom };
-            { dc.drawBitmapMirroredX(Envy::getAssets().arrowBackIcon.getBitmap(), backArrowRect, rtl); }
-            if (shouldSelect(backArrowRect, cursorPos)) {
-                if (justClicked[0]) {
-                    playClickSound();
-                    this->tab = MODULES;
-                }
-            }
-        } else if (tab == MODULES) {
-            RectF hudEditRect;
-            {
-                float hudEditWidth = rect.getWidth() * 0.02851f;
-                float hudEditHeight = rect.getHeight() * 0.04432f;
-                hudEditRect = rtl ? RectF { xRect.right + betw, xRect.bottom - hudEditHeight,
-                                            xRect.right + betw + hudEditWidth, xRect.bottom }
-                                  : RectF { xRect.left - betw - hudEditWidth, xRect.bottom - hudEditHeight,
-                                            xRect.left - betw, xRect.bottom };
-
-                dc.ctx->DrawBitmap(Envy::getAssets().hudEditIcon.getBitmap(), hudEditRect);
-
-                if (shouldSelect(hudEditRect, cursorPos)) {
-                    setTooltip(LocalizeString::get("client.ui.clickGui.openHudEditor.desc"));
-                    if (justClicked[0]) {
-                        playClickSound();
-                        close();
-                        Envy::getScreenManager().showScreen<HUDEditor>(true);
-                    }
-                }
-            }
-
-            // settings button
-            RectF settingsRect;
-            {
-                float setSize = rect.getWidth() * 0.02745f;
-                settingsRect = rtl ? RectF { hudEditRect.right + betw, hudEditRect.bottom - setSize,
-                                             hudEditRect.right + betw + setSize, hudEditRect.bottom }
-                                   : RectF { hudEditRect.left - betw - setSize, hudEditRect.bottom - setSize,
-                                             hudEditRect.left - betw, hudEditRect.bottom };
-
-                if (shouldSelect(settingsRect, cursorPos)) {
-                    setTooltip(LocalizeString::get("client.ui.clickGui.openSettings.desc"));
-                    if (justClicked[0]) {
-                        playClickSound();
-                        this->tab = SETTINGS;
-                    }
-                }
-
-                dc.ctx->DrawBitmap(Envy::getAssets().cogIcon.getBitmap(), settingsRect);
-            }
-        }
     }
 
     // Search Bar + tabs
     RectF searchRect {};
     {
-        float gaps = guiWidth * 0.02217f;
         float gapY = rect.getHeight() * 0.0175f;
 
         // prototype height = 564
 
-        float searchWidth = guiWidth * 0.25f;
+        float searchWidth = contentRect.getWidth() * 0.28f;
         float searchHeight = 0.0425f * rect.getHeight();
         float searchRound = searchHeight * 0.416f;
 
-        searchRect = d2d::rectFromStart(rect, offX, logoRect.bottom + gapY, searchWidth, searchHeight, rtl);
+        searchRect = d2d::rectFromStart(contentRect, offX, logoRect.bottom + gapY, searchWidth, searchHeight, rtl);
         auto searchCol = d2d::Color::RGB(0x70, 0x70, 0x70).asAlpha(0.28f);
 
         if (shouldSelect(searchRect, cursorPos)) {
@@ -427,14 +546,14 @@ void ClickGUI::onRender(Event&) {
             auto& settings = Envy::getSettings();
             std::wstring settingSearch = lowercase(searchTextBox.getText());
 
-            float settingWidth = rect.getWidth() / 3.f;
+            float settingWidth = contentRect.getWidth() / 3.f;
             float padToSettings = 0.04787f * rect.getHeight();
             float settingRowHeight = rect.getWidth() * setting_height_relative;
             float settingsBottom = rect.bottom - settingRowHeight * 1.3f;
             auto hasSettingRoom = [settingsBottom, settingRowHeight](Vec2 const& settingPos) {
                 return settingPos.y + settingRowHeight <= settingsBottom;
             };
-            float startColumnX = d2d::logicalColumnX(rect, offX, settingWidth, rtl);
+            float startColumnX = d2d::logicalColumnX(contentRect, offX, settingWidth, rtl);
             // float settings
             Vec2 setPos = { startColumnX, searchRect.bottom + padToSettings };
             {
@@ -472,7 +591,7 @@ void ClickGUI::onRender(Event&) {
             }
 
             // bool settings
-            setPos = { d2d::logicalColumnX(rect, rect.getWidth() * (1.3f / 3.f), settingWidth, rtl),
+            setPos = { d2d::logicalColumnX(contentRect, contentRect.getWidth() * (1.3f / 3.f), settingWidth, rtl),
                        searchRect.bottom + padToSettings };
             {
                 // go through all bool settings
@@ -488,88 +607,27 @@ void ClickGUI::onRender(Event&) {
                     }
                 });
             }
-        } else if (tab == MODULES) {
-            // all, game, hud, etc buttons
-            static std::vector<std::tuple<std::string, ClickGUI::ModTab, d2d::Color, float>> modTabs = {
-                { "client.ui.clickGui.tab.all.name", ALL, searchCol, 0.f },
-                { "client.ui.clickGui.tab.game.name", GAME, searchCol, 0.f },
-                { "client.ui.clickGui.tab.hud.name", HUD, searchCol, 0.f },
-                { "client.ui.clickGui.tab.plugins.name", SCRIPT, searchCol, 0.f }
-            };
-
-            float nodeWidth = guiWidth * 0.083f;
-
-            RectF nodeRect = rtl ? RectF { searchRect.left - gaps - nodeWidth, searchRect.top, searchRect.left - gaps,
-                                           searchRect.bottom }
-                                 : RectF { searchRect.right + gaps, searchRect.top, searchRect.right + gaps + nodeWidth,
-                                           searchRect.bottom };
-            float pressDownHeight = searchRect.getHeight() / 10.f;
-
-            for (auto& pair : modTabs) {
-                RectF renderTabRect = nodeRect;
-
-                float pressDownTranslate = pressDownHeight * std::get<3>(pair);
-                renderTabRect = renderTabRect.translate(0.f, pressDownTranslate);
-
-                bool contains = shouldSelect(renderTabRect, cursorPos);
-                std::get<2>(pair) = util::LerpColorState(std::get<2>(pair), searchCol + 0.2f, searchCol, contains);
-
-                if (justClicked[0] && contains) {
-                    this->modTab = std::get<1>(pair);
-                    playClickSound();
-                    scroll = 0.f;
-                }
-
-                std::get<3>(pair) = std::lerp(
-                    std::get<3>(pair), ((contains && mouseButtons[0]) || modTab == std::get<1>(pair)) ? 1.f : 0.f,
-                    Envy::getRenderer().getDeltaTime() / 5.f);
-
-                contains = shouldSelect(renderTabRect, cursorPos);
-
-                if (pressDownTranslate < 0.01f) dc.ctx->SetTarget(shadowBitmap.Get());
-                D2D1_ROUNDED_RECT rr {};
-                rr.radiusX = searchRound;
-                rr.radiusY = searchRound;
-                rr.rect = renderTabRect.get();
-                auto solidBrush = rend.getSolidBrush();
-                if (this->modTab == std::get<1>(pair)) {
-                    solidBrush->SetColor((std::get<2>(pair) - 0.1f).get());
-                } else {
-                    solidBrush->SetColor(std::get<2>(pair).get());
-                }
-                dc.ctx->FillRoundedRectangle(rr, rend.getSolidBrush());
-
-                float baseColor = 1.f - (0.1f * std::get<3>(pair));
-                dc.drawSingleLineFitted(renderTabRect, LocalizeString::get(std::get<0>(pair)),
-                                        { baseColor, baseColor, baseColor, 0.8f }, FontSelection::PrimaryRegular,
-                                        nodeRect.getHeight() / 2.f, DWRITE_TEXT_ALIGNMENT_CENTER,
-                                        DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
-                dc.ctx->SetTarget(myBitmap);
-
-                auto oWidth = nodeRect.getWidth() + gaps;
-                nodeRect.left += rtl ? -oWidth : oWidth;
-                nodeRect.right += rtl ? -oWidth : oWidth;
-            }
         }
     }
 
     // Panels
     if (this->tab == MODULES) {
-        auto modulePad = guiWidth * 0.0317f;
+        float contentW = contentRect.getWidth();
+        auto modulePad = contentW * 0.0317f;
         int numMods = 3;
         float modBetwPad = modulePad / 2.f;
         float totalPad = (modBetwPad * 2.f) + modulePad * 2.f;
-        float modWidth = (guiWidth - totalPad) / numMods;
+        float modWidth = (contentW - totalPad) / numMods;
         float modHeight = 0.08F * rect.getHeight();
         float padFromSearchBar = 0.034F * rect.getHeight();
 
-        float xStart = rtl ? rect.right - modulePad - modWidth : rect.left + modulePad;
+        float xStart = rtl ? contentRect.right - modulePad - modWidth : contentRect.left + modulePad;
         float x = xStart;
         float y = searchRect.bottom + padFromSearchBar;
         float modStartTop = y;
 
-        dc.ctx->PushAxisAlignedClip({ rect.left, y, rect.right, rect.bottom }, D2D1_ANTIALIAS_MODE_ALIASED);
-        modClip = { rect.left, y, rect.right, rect.bottom };
+        dc.ctx->PushAxisAlignedClip({ contentRect.left, y, contentRect.right, rect.bottom }, D2D1_ANTIALIAS_MODE_ALIASED);
+        modClip = { contentRect.left, y, contentRect.right, rect.bottom };
 
         y -= this->lerpScroll;
 
@@ -996,8 +1054,8 @@ void ClickGUI::onRender(Event&) {
 
         if (scrollMax > 0.f) {
             float trackWidth = 4.f * adaptedScale;
-            d2d::Rect visibleListRect { rect.left, modStartTop, rect.right, rect.bottom };
-            float trackX = rtl ? rect.left + (modulePad * 0.5f) - trackWidth : rect.right - (modulePad * 0.5f);
+            d2d::Rect visibleListRect { contentRect.left, modStartTop, contentRect.right, rect.bottom };
+            float trackX = rtl ? contentRect.left + (modulePad * 0.5f) - trackWidth : contentRect.right - (modulePad * 0.5f);
             d2d::Rect track { trackX, visibleListRect.top, trackX + trackWidth, visibleListRect.bottom };
             float thumbHeight = std::max(24.f * adaptedScale,
                                          visibleListRect.getHeight() *

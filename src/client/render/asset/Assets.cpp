@@ -16,6 +16,10 @@ Assets::Assets()
     , checkmarkIcon(GET_RESOURCE(checkmark_png))
     , logoWhite(GET_RESOURCE(envywhite_png))
     , document(GET_RESOURCE(document_png))
+    , tabAllIcon(GET_RESOURCE(all_png))
+    , tabGameIcon(GET_RESOURCE(game_png))
+    , tabHudIcon(GET_RESOURCE(hud_png))
+    , tabPluginsIcon(GET_RESOURCE(plugins_png))
 
 {
     allAssets.push_back(&this->envyLogo);
@@ -28,6 +32,10 @@ Assets::Assets()
     allAssets.push_back(&this->checkmarkIcon);
     allAssets.push_back(&this->logoWhite);
     allAssets.push_back(&this->document);
+    allAssets.push_back(&this->tabAllIcon);
+    allAssets.push_back(&this->tabGameIcon);
+    allAssets.push_back(&this->tabHudIcon);
+    allAssets.push_back(&this->tabPluginsIcon);
 }
 
 Assets::~Assets() {
