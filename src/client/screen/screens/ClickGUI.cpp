@@ -268,14 +268,17 @@ void ClickGUI::onRender(Event&) {
         };
 
         float dt = Envy::getRenderer().getDeltaTime();
-        float iconHit = 40.f * adaptedScale;
         float iconPad = 10.f * adaptedScale;
-        float iconSize = 20.f * adaptedScale;
+        float btnSize = 44.f * adaptedScale;
+        float btnGap = 6.f * adaptedScale;
+        float btnRadius = 8.f * adaptedScale;
+        float iconSize = btnSize * 0.6f;
+        float btnX = railRect.left + (railRect.getWidth() - btnSize) / 2.f;
 
         float railY = railRect.top + iconPad;
         for (auto& entry : railIcons) {
-            RectF hitRect { railRect.left, railY, railRect.right, railY + iconHit };
-            railY += iconHit + 4.f * adaptedScale;
+            RectF hitRect { btnX, railY, btnX + btnSize, railY + btnSize };
+            railY += btnSize + btnGap;
 
             bool hover = shouldSelect(hitRect, cursorPos);
             bool active = this->tab == MODULES && this->modTab == entry.tab;
@@ -293,14 +296,11 @@ void ClickGUI::onRender(Event&) {
                 this->lerpScroll = 0.f;
             }
 
-            RectF pillRect { hitRect.left + 3.f * adaptedScale, hitRect.top + 2.5f * adaptedScale,
-                             hitRect.right - 3.f * adaptedScale, hitRect.bottom - 2.5f * adaptedScale };
-
             if (entry.lerpHover > 0.01f)
-                dc.fillRoundedRectangle(pillRect, d2d::Color::RGB(0xFF, 0xFF, 0xFF).asAlpha(0.07f * entry.lerpHover),
-                                        8.f * adaptedScale);
+                dc.fillRoundedRectangle(hitRect, d2d::Color::RGB(0xFF, 0xFF, 0xFF).asAlpha(0.07f * entry.lerpHover),
+                                        btnRadius);
             if (entry.lerpActive > 0.01f)
-                dc.fillRoundedRectangle(pillRect, accentColor.asAlpha(0.92f * entry.lerpActive), 8.f * adaptedScale);
+                dc.fillRoundedRectangle(hitRect, accentColor.asAlpha(0.92f * entry.lerpActive), btnRadius);
 
             auto bmp = entry.icon->getBitmap();
             auto bmpSize = bmp->GetPixelSize();
@@ -320,17 +320,17 @@ void ClickGUI::onRender(Event&) {
         }
 
         // divider above the utility buttons
-        float dividerY = railRect.bottom - iconPad - iconHit * 2.f - 10.f * adaptedScale;
-        dc.fillRectangle({ railRect.left + 9.f * adaptedScale, dividerY, railRect.right - 9.f * adaptedScale,
+        float dividerY = railRect.bottom - iconPad - btnSize * 2.f - btnGap - 14.f * adaptedScale;
+        dc.fillRectangle({ btnX + 4.f * adaptedScale, dividerY, btnX + btnSize - 4.f * adaptedScale,
                            dividerY + 1.f * adaptedScale },
                          d2d::Color::RGB(0xFF, 0xFF, 0xFF).asAlpha(0.08f));
 
-        float utilBottom = railRect.bottom - iconPad - iconHit;
+        float utilBottom = railRect.bottom - iconPad;
 
         // client settings
         {
             static float cogHover = 0.f;
-            RectF hitRect { railRect.left, utilBottom, railRect.right, utilBottom + iconHit };
+            RectF hitRect { btnX, utilBottom - btnSize, btnX + btnSize, utilBottom };
             bool hover = shouldSelect(hitRect, cursorPos);
             bool active = this->tab == SETTINGS;
 
@@ -345,13 +345,11 @@ void ClickGUI::onRender(Event&) {
                 this->lerpScroll = 0.f;
             }
 
-            RectF pillRect { hitRect.left + 3.f * adaptedScale, hitRect.top + 2.5f * adaptedScale,
-                             hitRect.right - 3.f * adaptedScale, hitRect.bottom - 2.5f * adaptedScale };
             if (active)
-                dc.fillRoundedRectangle(pillRect, accentColor.asAlpha(0.92f), 8.f * adaptedScale);
+                dc.fillRoundedRectangle(hitRect, accentColor.asAlpha(0.92f), btnRadius);
             else if (cogHover > 0.01f)
-                dc.fillRoundedRectangle(pillRect, d2d::Color::RGB(0xFF, 0xFF, 0xFF).asAlpha(0.07f * cogHover),
-                                        8.f * adaptedScale);
+                dc.fillRoundedRectangle(hitRect, d2d::Color::RGB(0xFF, 0xFF, 0xFF).asAlpha(0.07f * cogHover),
+                                        btnRadius);
 
             auto bmp = Envy::getAssets().cogIcon.getBitmap();
             auto bmpSize = bmp->GetPixelSize();
@@ -373,8 +371,8 @@ void ClickGUI::onRender(Event&) {
         // HUD editor
         {
             static float hudHover = 0.f;
-            RectF hitRect { railRect.left, utilBottom - iconHit - 4.f * adaptedScale, railRect.right,
-                            utilBottom - 4.f * adaptedScale };
+            RectF hitRect { btnX, utilBottom - btnSize * 2.f - btnGap, btnX + btnSize,
+                            utilBottom - btnSize - btnGap };
             bool hover = shouldSelect(hitRect, cursorPos);
 
             hudHover = std::lerp(hudHover, hover ? 1.f : 0.f, dt * 0.3f);
@@ -388,10 +386,8 @@ void ClickGUI::onRender(Event&) {
             }
 
             if (hudHover > 0.01f)
-                dc.fillRoundedRectangle(
-                    { hitRect.left + 3.f * adaptedScale, hitRect.top + 2.5f * adaptedScale,
-                      hitRect.right - 3.f * adaptedScale, hitRect.bottom - 2.5f * adaptedScale },
-                    d2d::Color::RGB(0xFF, 0xFF, 0xFF).asAlpha(0.07f * hudHover), 8.f * adaptedScale);
+                dc.fillRoundedRectangle(hitRect, d2d::Color::RGB(0xFF, 0xFF, 0xFF).asAlpha(0.07f * hudHover),
+                                        btnRadius);
 
             auto bmp = Envy::getAssets().hudEditIcon.getBitmap();
             auto bmpSize = bmp->GetPixelSize();
