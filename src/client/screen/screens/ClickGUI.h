@@ -105,7 +105,8 @@ private:
         float lerpToggle = 0.f;
         float lerpHover = 0.f;
         Color toggleColorOn = {};
-        Color toggleColorOff = d2d::Color::RGB(0x63, 0x63, 0x63);
+        Color toggleColorOff = d2d::Color::RGB(0x45, 0x45, 0x50);
+        Color cardColor = d2d::Color::RGB(0x1B, 0x1B, 0x22).asAlpha(0.95f);
         std::optional<d2d::Rect> modRect = std::nullopt;
 
         static bool isLess(ModuleLike const& a, ModuleLike const& b) {

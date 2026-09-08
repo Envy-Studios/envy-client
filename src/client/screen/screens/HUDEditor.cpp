@@ -78,9 +78,8 @@ void HUDEditor::onRender(Event& ev) {
             Vec2 btnPos = ssRec.center({ 200.f, 60.f });
             d2d::Rect btnRect = { btnPos, Vec2(btnPos.x + buttonWidth, btnPos.y + buttonHeight) };
 
-            d2d::Color oCol = d2d::Color::RGB(0x7, 0x7, 0x7).asAlpha(0.75f);
+            d2d::Color oCol = d2d::Color::RGB(0x10, 0x10, 0x14).asAlpha(0.92f);
             static d2d::Color col = oCol;
-            d2d::Color outlineCol = d2d::Color::RGB(0, 0, 0).asAlpha(0.28f);
 
             bool state = shouldSelect(btnRect, cursorPos);
             if (state && justClicked[0]) {
@@ -91,7 +90,6 @@ void HUDEditor::onRender(Event& ev) {
 
             col = util::LerpColorState(col, oCol + 0.1f, oCol, state);
             dc.fillRoundedRectangle(btnRect, col, 20.f);
-            dc.drawRoundedRectangle(btnRect, outlineCol, 20.f, 2.f, DrawUtil::OutlinePosition::Outside);
 
             dc.drawText(btnRect, LocalizeString::get("client.ui.hudEditor.modSettings.name"),
                         d2d::Color(0.9f, 0.9f, 0.9f, 1.f), Renderer::FontSelection::PrimaryRegular, 20.f,
