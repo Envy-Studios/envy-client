@@ -217,8 +217,8 @@ void ClickGUI::onRender(Event&) {
     }
     calcAnim = std::lerp(calcAnim, isActive() ? 1.f : 0.f, Envy::getRenderer().getDeltaTime() * 0.2f);
 
-    d2d::Color rcColor = d2d::Color::RGB(0x10, 0x10, 0x14);
-    rcColor.a = 0.92f;
+    d2d::Color rcColor = d2d::Color::RGB(0x7, 0x7, 0x7);
+    rcColor.a = 0.75f;
     rect.round();
 
     if (!isActive()) return;
@@ -243,28 +243,19 @@ void ClickGUI::onRender(Event&) {
 
     RectF logoRect = d2d::rectFromStart(rect, offX, rect.top + offY, imgSize, imgSize, rtl);
 
-    // ENVY wordmark (the logo image was removed; text now sits at the window padding)
+    // Envy text (the logo image was removed; text now sits at the window padding)
     {
         // Envy Text
         float realLogoHeight = rect.getHeight() * 0.077921f;
-        float titleSize = 24.f * adaptedScale;
-        std::wstring titleText = L"\x202A" L"E\x2009" L"N\x2009" L"V\x2009" L"Y\x202C";
+        float titleSize = 25.f * adaptedScale;
+        std::wstring titleText = L"\x202A" L"Envy Client\x202C";
         float titleWidth = 500.f * adaptedScale;
         RectF titleRect = rtl ? RectF { rect.right - offX - titleWidth, rect.top + offY, rect.right - offX,
                                         rect.top + offY + realLogoHeight }
                               : RectF { rect.left + offX, rect.top + offY, rect.left + offX + titleWidth,
                                         rect.top + offY + realLogoHeight };
-        dc.drawText(titleRect, titleText, d2d::Color(1.f, 1.f, 1.f, 1.f), FontSelection::PrimaryRegular, titleSize,
+        dc.drawText(titleRect, titleText, d2d::Color(1.f, 1.f, 1.f, 1.f), FontSelection::PrimaryLight, titleSize,
                     DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_CENTER, false);
-
-        // accent dot after the wordmark
-        Vec2 ts = dc.getTextSize(titleText, FontSelection::PrimaryRegular, titleSize);
-        float dotR = titleSize * 0.14f;
-        float dotGap = titleSize * 0.22f;
-        float dotX = rtl ? titleRect.right - ts.x - dotGap : titleRect.left + ts.x + dotGap;
-        dc.brush->SetColor(accentColor.get());
-        dc.ctx->FillEllipse(D2D1::Ellipse({ dotX, titleRect.centerY() + titleSize * 0.1f }, dotR, dotR),
-                            dc.brush);
     }
 
     // X button / other menus
@@ -779,26 +770,11 @@ void ClickGUI::onRender(Event&) {
                     dc.ctx->PushAxisAlignedClip(clipRect.get(), D2D1_ANTIALIAS_MODE_ALIASED);
                 }
 
-                d2d::Color cardBase = d2d::Color::RGB(0x1B, 0x1B, 0x22).asAlpha(0.95f);
-                if (mod.mod) {
-                    mod.cardColor = util::LerpColorState(
-                        mod.cardColor, d2d::Color::RGB(0x23, 0x23, 0x2F).asAlpha(0.97f), cardBase,
-                        mod.mod->isEnabled());
-                }
-                dc.fillRoundedRectangle(modRectActual, mod.cardColor, .22f * modHeight);
-
-                // enabled: accent bar on the leading edge
-                if (mod.mod && mod.lerpToggle > 0.01f) {
-                    float barW = 4.f * adaptedScale;
-                    float barH = modRect.getHeight() * 0.52f;
-                    RectF barRect =
-                        rtl ? RectF { modRect.right - barW * 1.5f, modRect.centerY() - barH / 2.f,
-                                      modRect.right - barW * 0.5f, modRect.centerY() + barH / 2.f }
-                            : RectF { modRect.left + barW * 0.5f, modRect.centerY() - barH / 2.f,
-                                      modRect.left + barW * 1.5f, modRect.centerY() + barH / 2.f };
-                    dc.fillRoundedRectangle(barRect, accentColor.asAlpha(std::clamp(mod.lerpToggle, 0.f, 1.f)),
-                                            barW * 0.5f);
-                }
+                dc.fillRoundedRectangle(modRectActual, d2d::Color::RGB(0x44, 0x44, 0x44).asAlpha(0.22f),
+                                        .22f * modHeight);
+                dc.drawRoundedRectangle(modRectActual, accentColor.asAlpha(1.f * mod.lerpToggle), .22f * modHeight, 1.f,
+                                        DrawUtil::OutlinePosition::Inside);
+                ;
                 if (renderExtended) {
                     dc.ctx->DrawBitmap(auxiliaryBitmap.Get());
                     dc.ctx->PopAxisAlignedClip();
@@ -884,33 +860,26 @@ void ClickGUI::onRender(Event&) {
                         mod.toggleColorOff =
                             util::LerpColorState(mod.toggleColorOff, offCol + 0.2f, offCol, selecToggle);
 
-                        // slim switch
-                        float switchH = toggleRect.getHeight() * 0.72f;
-                        float switchPadY = (toggleRect.getHeight() - switchH) / 2.f;
-                        RectF switchRect = { toggleRect.left, toggleRect.top + switchPadY, toggleRect.right,
-                                             toggleRect.bottom - switchPadY };
+                        // float aTogglePadY = toggleRect.getHeight() * 0.15f;
+                        float radius = toggleRect.getHeight() * 0.35f;
+                        float circleOffs = toggleWidth * 0.27f;
+
+                        dc.fillRoundedRectangle(toggleRect,
+                                                mod.mod->isEnabled() ? mod.toggleColorOn : mod.toggleColorOff,
+                                                toggleRect.getHeight() / 2.f);
+                        Vec2 center { rtl ? toggleRect.right - circleOffs : toggleRect.left + circleOffs,
+                                      toggleRect.centerY() };
+                        Vec2 center2 = center;
+                        center2.x = rtl ? toggleRect.left + circleOffs : toggleRect.right - circleOffs;
+                        float onDist = center2.x - center.x;
 
                         mod.lerpToggle = std::lerp(mod.lerpToggle, mod.mod->isEnabled() ? 1.f : 0.f,
                                                    Envy::getRenderer().getDeltaTime() * 0.3f);
 
-                        float knobInset = switchH * 0.10f;
-                        float knobRadius = switchH / 2.f - knobInset;
-                        float circleOffs = knobInset + knobRadius;
-
-                        dc.fillRoundedRectangle(switchRect,
-                                                mod.mod->isEnabled() ? mod.toggleColorOn : mod.toggleColorOff,
-                                                switchH / 2.f);
-                        Vec2 center { rtl ? switchRect.right - circleOffs : switchRect.left + circleOffs,
-                                      switchRect.centerY() };
-                        Vec2 center2 = center;
-                        center2.x = rtl ? switchRect.left + circleOffs : switchRect.right - circleOffs;
-                        float onDist = center2.x - center.x;
-
                         center.x += onDist * mod.lerpToggle;
 
-                        dc.brush->SetColor(d2d::Color(1.f, 1.f, 1.f, 1.f).get());
-                        dc.ctx->FillEllipse(D2D1::Ellipse({ center.x, center.y }, knobRadius, knobRadius),
-                                            dc.brush);
+                        dc.brush->SetColor(d2d::Color(0xB9, 0xB9, 0xB9).get());
+                        dc.ctx->FillEllipse(D2D1::Ellipse({ center.x, center.y }, radius, radius), dc.brush);
                     }
                 }
 
