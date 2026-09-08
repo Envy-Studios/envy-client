@@ -217,8 +217,6 @@ void ClickGUI::onRender(Event&) {
     }
     calcAnim = std::lerp(calcAnim, isActive() ? 1.f : 0.f, Envy::getRenderer().getDeltaTime() * 0.2f);
 
-    d2d::Color outline = d2d::Color::RGB(0, 0, 0);
-    outline.a = 0.28f;
     d2d::Color rcColor = d2d::Color::RGB(0x7, 0x7, 0x7);
     rcColor.a = 0.75f;
     rect.round();
@@ -237,8 +235,7 @@ void ClickGUI::onRender(Event&) {
     //
 
     // Menu Rect
-    dc.fillRoundedRectangle(rect, rcColor, 19.f * adaptedScale);
-    dc.drawRoundedRectangle(rect, outline, 19.f * adaptedScale, 4.f * adaptedScale, DrawUtil::OutlinePosition::Outside);
+    dc.fillRoundedRectangle(rect, rcColor, 8.f * adaptedScale);
 
     float offX = 0.01689f * rect.getWidth();
     float offY = 0.03191f * rect.getHeight();
@@ -246,34 +243,17 @@ void ClickGUI::onRender(Event&) {
 
     RectF logoRect = d2d::rectFromStart(rect, offX, rect.top + offY, imgSize, imgSize, rtl);
 
-    // Envy Logo + text
+    // Envy text (the logo image was removed; text now sits at the window padding)
     {
-        {
-            auto bmp = Envy::getAssets().envyLogo.getBitmap();
-
-            D2D1::Matrix3x2F oMat;
-            auto sz = Envy::getRenderer().getScreenSize();
-
-            D2D1::Matrix3x2F m;
-
-            // dc.ctx->GetTransform(&m);
-            // dc.ctx->SetTransform(D2D1::Matrix3x2F::Scale(41.f / sz.width, 41.f / sz.height) *
-            // D2D1::Matrix3x2F::Translation(logoRect.left, logoRect.top) * m);
-            dc.ctx->DrawBitmap(bmp, logoRect, 1.f);
-            // dc.ctx->DrawImage(compositeEffect.Get(), { 0.f, 0.f });
-            // dc.ctx->SetTransform(m);
-        }
-
         // Envy Text
         float realLogoHeight = rect.getHeight() * 0.077921f;
         float titleSize = 25.f * adaptedScale;
         std::wstring titleText = L"\x202A" L"Envy Client\x202C";
-        float titleGap = 9.f * adaptedScale;
         float titleWidth = 500.f * adaptedScale;
-        RectF titleRect = rtl ? RectF { logoRect.left - titleGap - titleWidth, logoRect.top, logoRect.left - titleGap,
-                                        logoRect.top + realLogoHeight }
-                              : RectF { logoRect.right + titleGap, logoRect.top, logoRect.right + titleGap + titleWidth,
-                                        logoRect.top + realLogoHeight };
+        RectF titleRect = rtl ? RectF { rect.right - offX - titleWidth, rect.top + offY, rect.right - offX,
+                                        rect.top + offY + realLogoHeight }
+                              : RectF { rect.left + offX, rect.top + offY, rect.left + offX + titleWidth,
+                                        rect.top + offY + realLogoHeight };
         dc.drawText(titleRect, titleText, d2d::Color(1.f, 1.f, 1.f, 1.f), FontSelection::PrimaryLight, titleSize,
                     DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_CENTER, false);
     }
@@ -2138,9 +2118,7 @@ void ClickGUI::drawColorPicker() {
 
     // draw menu
 
-    dc.fillRoundedRectangle(cPickerRect, d2d::Color::RGB(0x7, 0x7, 0x7).asAlpha(0.8f), 19.f * adaptedScale);
-    dc.drawRoundedRectangle(cPickerRect, d2d::Color::RGB(0, 0, 0).asAlpha(0.28f), 19.f * adaptedScale,
-                            4.f * adaptedScale, DrawUtil::OutlinePosition::Outside);
+    dc.fillRoundedRectangle(cPickerRect, d2d::Color::RGB(0x7, 0x7, 0x7).asAlpha(0.8f), 8.f * adaptedScale);
 
     // x button
     float xWidth = 0.06f * rectWidth;
