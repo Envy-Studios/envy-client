@@ -19,10 +19,6 @@ public:
     Asset checkmarkIcon;
     Asset logoWhite;
     Asset document;
-    Asset tabAllIcon;
-    Asset tabGameIcon;
-    Asset tabHudIcon;
-    Asset tabPluginsIcon;
 
     void loadAll();
     void unloadAll();
