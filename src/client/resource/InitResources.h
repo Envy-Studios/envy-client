@@ -12,6 +12,10 @@ LOAD_RESOURCE(envywhite_png);
 LOAD_RESOURCE(logo_png);
 LOAD_RESOURCE(searchicon_png);
 LOAD_RESOURCE(x_png);
+LOAD_RESOURCE(all_png);
+LOAD_RESOURCE(game_png);
+LOAD_RESOURCE(hud_png);
+LOAD_RESOURCE(plugins_png);
 LOAD_RESOURCE(document_png);
 
 // JavaScript
