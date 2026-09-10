@@ -39,7 +39,7 @@ void DiscordLogin::onRender(Event&) {
     fade += (1.f - fade) * std::min(dt * 0.5f, 1.f);
     dotTimer += dt;
 
-    auto const& rend = Envy::getRenderer();
+    auto& rend = Envy::getRenderer();
     auto ss = rend.getScreenSize();
     adaptedScale = ss.width / 1920.f;
 
@@ -163,7 +163,7 @@ void DiscordLogin::onRender(Event&) {
     // hand over to the game thread: load the modules, then close the screen
     if (authState == DiscordAuth::State::SignedIn && !finishedLoading) {
         finishedLoading = true;
-        Envy::queueForClientThread([] {
+        Envy::get().queueForClientThread([] {
             Envy::getConfigManager().applyModuleConfig();
             Envy::getNotifications().push(LocalizeString::get("client.intro.welcome"));
             Envy::getNotifications().push(util::FormatWString(
