@@ -178,6 +178,12 @@ target_link_libraries(Envy PRIVATE
 
         # PlaySound for scripting
         winmm
+
+        # discord oauth loopback listener
+        ws2_32
+
+        # dpapi session storage
+        crypt32
 )
 
 add_subdirectory(src)

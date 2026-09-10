@@ -3,6 +3,7 @@
 #include "screens/GyroCalibrationScreen.h"
 #include "screens/HUDEditor.h"
 #include "screens/SkinStealerScreen.h"
+#include "screens/DiscordLogin.h"
 
 #include "client/manager/StaticManager.h"
 #include "client/event/Listener.h"
@@ -14,7 +15,7 @@
 #include <atomic>
 
 class ScreenManager : public Listener,
-                      public StaticManager<Screen, ClickGUI, HUDEditor, SkinStealerScreen, GyroCalibrationScreen> {
+                      public StaticManager<Screen, ClickGUI, HUDEditor, SkinStealerScreen, GyroCalibrationScreen, DiscordLogin> {
 public:
     ScreenManager();
 

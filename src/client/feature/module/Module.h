@@ -5,6 +5,7 @@
 #include "client/localization/LocalizeString.h"
 #include "client/feature/setting/Setting.h"
 #include "client/feature/setting/SettingGroup.h"
+#include "client/auth/DiscordAuth.h"
 #include <functional>
 #include <optional>
 
@@ -104,6 +105,8 @@ public:
 
     void setEnabled(bool b, bool blockedOverride = false) {
         if (!blockedOverride && isBlocked()) return;
+        // modules stay off until the user signed in with discord
+        if (b && !DiscordAuth::get().isSignedIn()) return;
         b ? onEnable() : onDisable();
         std::get<BoolValue>(enabled) = shouldPersistEnabled() ? b : false;
     }

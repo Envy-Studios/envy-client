@@ -46,6 +46,12 @@ The `Build DLL` GitHub Actions workflow builds on a Windows runner and publishes
 Envy supports JavaScript plugins (ChakraCore) and stays compatible with the
 [Latite scripting API](https://github.com/LatiteScripting/Scripts).
 
+## Disclaimer
+
+Envy Client is not affiliated with, endorsed by, or associated with Mojang Studios or Microsoft.
+"Minecraft" is a trademark of Mojang Studios. Use of third-party clients may violate the
+Minecraft EULA; use at your own risk.
+
 ## License
 
 Envy is licensed under the GNU AGPL-3.0 — see [LICENSE](LICENSE).

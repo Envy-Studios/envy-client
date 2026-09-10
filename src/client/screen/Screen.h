@@ -25,6 +25,9 @@ public:
     [[nodiscard]] bool shouldListen() override { return isActive(); }
     [[nodiscard]] virtual std::string getName() = 0;
 
+    // false = the screen refuses manual closing (esc), used by the sign in gate
+    [[nodiscard]] virtual bool canCloseByUser() { return true; }
+
     // TODO: grabMouse and releaseMouse
     virtual void onEnable(bool ignoreAnimations = false) {};
     virtual void onDisable() {};

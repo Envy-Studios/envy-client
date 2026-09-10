@@ -4,6 +4,7 @@
 #include "screens/HUDEditor.h"
 #include "mc/common/client/game/ClientInstance.h"
 #include "client/event/events/KeyUpdateEvent.h"
+#include "client/auth/DiscordAuth.h"
 
 ScreenManager::ScreenManager() {
     Eventing::get().listen<KeyUpdateEvent, &ScreenManager::onKey>(this);
@@ -41,7 +42,14 @@ void ScreenManager::shutdownForEject() {
 }
 
 void ScreenManager::onKey(KeyUpdateEvent& ev) {
+    bool signedIn = DiscordAuth::get().isSignedIn();
+
     if (ev.isDown() && ev.getKey() == VK_ESCAPE && getActiveScreen()) {
+        // the sign in screen can't be dismissed
+        if (!signedIn && &getActiveScreen()->get() == &get<DiscordLogin>()) {
+            ev.setCancelled(true);
+            return;
+        }
         exitCurrentScreen();
         ev.setCancelled(true);
         return;
@@ -53,6 +61,11 @@ void ScreenManager::onKey(KeyUpdateEvent& ev) {
     });
 
     if (associatedScreen && ev.isDown() && (!ev.inUI() || getActiveScreen())) {
+        // nothing opens before the discord sign in went through
+        if (!signedIn) {
+            ev.setCancelled(true);
+            return;
+        }
         if (getActiveScreen())
             exitCurrentScreen();
         else {
