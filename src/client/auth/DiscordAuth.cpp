@@ -110,7 +110,7 @@ void DiscordAuth::beginSignIn() {
     if (signedIn.load(std::memory_order_acquire)) return;
 
     std::wstring clientId = kDiscordClientId;
-    if (clientId == L"REPLACE_WITH_CLIENT_ID") {
+    if (clientId.empty()) {
         finish(false, L"Discord sign in is not set up in this build yet (missing client id).");
         return;
     }
