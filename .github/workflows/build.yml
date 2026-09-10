@@ -128,7 +128,11 @@ jobs:
 
           $prevTag = git describe --tags --abbrev=0 2>$null
           if ($LASTEXITCODE -ne 0) { $prevTag = $null }
-          if ($prevTag -eq $tag) { $prevTag = $null }
+          # the tag is already in history (overwrite rebuild); fall back to the tag before it
+          if ($prevTag -eq $tag) {
+            $prevTag = git describe --tags --abbrev=0 "$tag^" 2>$null
+            if ($LASTEXITCODE -ne 0) { $prevTag = $null }
+          }
 
           if ($prevTag) {
             $lines.Add("### Commits since $prevTag")
@@ -151,6 +155,9 @@ jobs:
             gh release upload $tag $dll --clobber
             gh release edit $tag --title $title --notes-file notes.md
             if ($env:PRERELEASE -ne "true") { gh release edit $tag --latest }
+            # keep the tag on the build that shipped so the source zip matches the dll
+            git tag -f $tag $sha
+            git push -f origin $tag
             Write-Host "Updated existing release $tag"
           } else {
             if ($env:PRERELEASE -eq "true") {
