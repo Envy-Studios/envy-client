@@ -13,7 +13,7 @@
 // the token is only ever stored dpapi encrypted (per windows user, bound to
 // the machine), so a copied session file is worthless anywhere else.
 
-constexpr wchar_t kDiscordClientId[] = L"REPLACE_WITH_CLIENT_ID";
+constexpr wchar_t kDiscordClientId[] = L"1547724949639135302";
 constexpr int kOAuthPort = 8976;
 
 class DiscordAuth {
