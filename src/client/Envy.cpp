@@ -54,7 +54,6 @@ using namespace winrt::Windows::Storage;
 
 #include "render/Renderer.h"
 #include "screen/ScreenManager.h"
-#include "screen/screens/DiscordLogin.h"
 #include "render/asset/Assets.h"
 #include "resource/Resource.h"
 #include "feature/module/modules/game/Freelook.h"
@@ -608,8 +607,6 @@ void Envy::threadsafeInit() {
 
     Envy::getCommandManager().prefix = Envy::get().getCommandPrefix();
 
-    // modules stay off until the discord sign in finished
-    Envy::getScreenManager().showScreen<DiscordLogin>(true);
 }
 
 static void setModuleBlocked(std::string_view moduleName, bool shouldBlock) {
