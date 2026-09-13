@@ -174,6 +174,10 @@ bool Renderer::init(IDXGISwapChain* chain) {
                          reinterpret_cast<uintptr_t>(commandQueue.Get()), static_cast<unsigned>(queueDeviceHr));
             commandQueue = nullptr;
             reqCommandQueue = true;
+            // drop the captured device/chain so the next present can bind cleanly
+            gameDevice12 = nullptr;
+            swapChain4 = nullptr;
+            gameSwapChain = nullptr;
             return false;
         }
 
@@ -186,6 +190,10 @@ bool Renderer::init(IDXGISwapChain* chain) {
                          static_cast<int>(queueDesc.Type));
             commandQueue = nullptr;
             reqCommandQueue = true;
+            // drop the captured device/chain so the next present can bind cleanly
+            gameDevice12 = nullptr;
+            swapChain4 = nullptr;
+            gameSwapChain = nullptr;
             return false;
         }
 
@@ -256,6 +264,10 @@ bool Renderer::init(IDXGISwapChain* chain) {
             lastFailedCommandQueue = commandQueue;
             commandQueue = nullptr;
             reqCommandQueue = true;
+            // drop the captured device/chain so the next present can bind cleanly
+            gameDevice12 = nullptr;
+            swapChain4 = nullptr;
+            gameSwapChain = nullptr;
             return false;
         }
 
@@ -267,6 +279,10 @@ bool Renderer::init(IDXGISwapChain* chain) {
             lastFailedCommandQueue = commandQueue;
             commandQueue = nullptr;
             reqCommandQueue = true;
+            // drop the captured device/chain so the next present can bind cleanly
+            gameDevice12 = nullptr;
+            swapChain4 = nullptr;
+            gameSwapChain = nullptr;
             return false;
         }
     }

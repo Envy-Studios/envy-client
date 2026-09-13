@@ -61,11 +61,13 @@ void Screen::onClick(Event& evGeneric) {
     auto& ev = reinterpret_cast<ClickEvent&>(evGeneric);
     if (ev.getMouseButton() > 0) {
         if (ev.getMouseButton() < 4) {
-            if (isActive()) {
+            // only swallow input once the overlay can actually draw it,
+            // otherwise a screen that never renders would eat clicks forever
+            if (isActive() && Envy::getRenderer().hasInitialized()) {
                 if (ev.isDown()) this->activeMouseButtons[ev.getMouseButton() - 1] = ev.isDown();
                 this->mouseButtons[ev.getMouseButton() - 1] = ev.isDown();
+                ev.setCancelled(true);
             }
-            if (isActive()) ev.setCancelled(true);
         }
     }
 }
