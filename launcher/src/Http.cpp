@@ -65,7 +65,7 @@ HttpResult HttpSend(std::wstring const& url, std::wstring const& method,
                                    body.empty() ? WINHTTP_NO_REQUEST_DATA : (LPVOID)body.data(),
                                    (DWORD)body.size(),
                                    (DWORD)body.size(),
-                                   nullptr);
+                                   0);
     if (!sent || !WinHttpReceiveResponse(request, nullptr)) {
         WinHttpCloseHandle(request);
         WinHttpCloseHandle(connect);

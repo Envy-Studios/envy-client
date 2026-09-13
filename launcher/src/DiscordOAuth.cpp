@@ -127,7 +127,7 @@ namespace {
             return;
         }
 
-        auto deadline = std::chrono::steady_clock::now() + 5min;
+        auto deadline = std::chrono::steady_clock::now() + std::chrono::minutes(5);
 
         while (!g_listenerStop.load(std::memory_order_acquire) &&
                std::chrono::steady_clock::now() < deadline) {
@@ -209,7 +209,7 @@ namespace oauth {
     std::optional<DiscordSession> VerifyToken(std::string const& token, std::wstring& error) {
         std::wstring wtoken(token.begin(), token.end());
         HttpResult http = HttpSend(L"https://discord.com/api/v10/users/@me", L"GET",
-                                   L"Authorization: Bearer " + wtoken + L"\r\n", L"");
+                                   L"Authorization: Bearer " + wtoken + L"\r\n", "");
         if (!http.ok) {
             error = http.error;
             return std::nullopt;

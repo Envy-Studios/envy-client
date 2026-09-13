@@ -8,6 +8,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <cwchar>
 
 // the dll rides inside the exe as a raw binary blob, linked in with the same
 // ld.exe trick the asset embedder uses. ld names the symbols after the file.

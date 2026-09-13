@@ -11,6 +11,7 @@ set(ENVY_EMBED_OBJ "${ENVY_EMBED_DIR}/Envy_dll.o")
 
 add_custom_command(
         OUTPUT "${ENVY_EMBED_DLL}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${ENVY_EMBED_DIR}"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:Envy>" "${ENVY_EMBED_DLL}"
         DEPENDS Envy
         COMMENT "Staging Envy.dll for the launcher"
