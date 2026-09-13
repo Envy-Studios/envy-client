@@ -10,6 +10,7 @@ public:
     DiscordLogin();
 
     void onRender(Event& ev);
+    void onKey(Event& ev);
 
     std::string getName() override { return "DiscordLogin"; }
     bool canCloseByUser() override { return false; }

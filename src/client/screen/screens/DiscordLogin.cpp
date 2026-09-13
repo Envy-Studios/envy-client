@@ -6,6 +6,8 @@
 #include "client/config/ConfigManager.h"
 #include "client/event/Eventing.h"
 #include "client/event/events/RenderOverlayEvent.h"
+#include "client/event/events/KeyUpdateEvent.h"
+#include "util/Logger.h"
 #include "client/localization/LocalizeString.h"
 #include "client/render/Renderer.h"
 #include "mc/common/client/game/ClientInstance.h"
@@ -16,16 +18,25 @@ using FontSelection = Renderer::FontSelection;
 
 DiscordLogin::DiscordLogin() {
     Eventing::get().listen<RenderOverlayEvent>(this, (EventListenerFunc)&DiscordLogin::onRender, 1, true);
+    Eventing::get().listen<KeyUpdateEvent>(this, (EventListenerFunc)&DiscordLogin::onKey, 1);
 }
 
 void DiscordLogin::onEnable(bool ignoreAnims) {
     fade = 0.f;
     finishedLoading = false;
     DiscordAuth::get().startRestore();
+    Logger::Info("waiting for discord sign in");
 }
 
 void DiscordLogin::onDisable() {
     DiscordAuth::get().cancelSignIn();
+}
+
+void DiscordLogin::onKey(Event& evGeneric) {
+    auto& ev = reinterpret_cast<KeyUpdateEvent&>(evGeneric);
+    if (ev.getKey() == VK_F11) return;
+    // the game gets no keys until the sign in went through
+    ev.setCancelled(true);
 }
 
 void DiscordLogin::onRender(Event&) {
@@ -41,14 +52,15 @@ void DiscordLogin::onRender(Event&) {
 
     auto& rend = Envy::getRenderer();
     auto ss = rend.getScreenSize();
-    adaptedScale = ss.width / 1920.f;
+    adaptedScale = std::clamp(ss.width / 1920.f, 0.72f, 1.1f);
 
     D2DUtil dc;
     dc.ctx->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
 
     Vec2 const& cursorPos = SDK::ClientInstance::get()->cursorPos;
 
-    // dim the game behind the sign in
+    // blur + dim the game behind the sign in
+    if (Envy::get().getMenuBlur()) dc.drawGaussianBlur(Envy::get().getMenuBlur().value() * fade);
     dc.fillRectangle({0.f, 0.f, ss.width, ss.height}, d2d::Color(0.f, 0.f, 0.f, 0.6f * fade));
 
     float boxWidth = 430.f * adaptedScale;
