@@ -21,7 +21,7 @@ DebugInfo::DebugInfo()
 
 namespace {
     std::string getMinecraftVersion() {
-        return std::format("Envy Client {}, Minecraft {}", Envy::get().version, Envy::get().gameVersion);
+        return std::format("Envy Client, Minecraft {}", Envy::get().gameVersion);
     }
     std::string getFPS() {
         return std::format("FPS: {}", Envy::get().getTimings().getFPS());

@@ -70,6 +70,7 @@ target_include_directories(EnvyLauncher PRIVATE
 target_link_libraries(EnvyLauncher PRIVATE
         user32
         gdi32
+        dwmapi
         shell32
         advapi32
         ole32

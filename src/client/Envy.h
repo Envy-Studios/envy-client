@@ -65,7 +65,7 @@ public:
     Envy() = default;
     ~Envy() = default;
 
-    static constexpr std::string_view version = "v2.9.1";
+    static constexpr std::string_view version = "";
     static constexpr std::array<std::string_view, 1> supportedMinecraftVersions = {
         "1.26.4x",
     };

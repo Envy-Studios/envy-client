@@ -1,6 +1,7 @@
 #include "Flow.h"
 
 #include <commctrl.h>
+#include <dwmapi.h>
 #include <windows.h>
 
 #include <string>
@@ -238,6 +239,17 @@ namespace {
     LRESULT CALLBACK ButtonSubclassProc(HWND h, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR id,
                                         DWORD_PTR) {
         switch (msg) {
+        case WM_ERASEBKGND: {
+            // the button class erases its rect with a light color; with rounded
+            // corners that leaves white notches around every button
+            HDC dc = (HDC)wp;
+            RECT rc{};
+            GetClientRect(h, &rc);
+            HBRUSH b = CreateSolidBrush(RGB(0x0A, 0x0A, 0x0A));
+            FillRect(dc, &rc, b);
+            DeleteObject(b);
+            return 1;
+        }
         case WM_MOUSEMOVE:
             if (!g_trackedButton) {
                 TRACKMOUSEEVENT tme{sizeof(tme), TME_LEAVE, h, 0};
@@ -455,6 +467,15 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int show) {
                                 (GetSystemMetrics(SM_CYSCREEN) - h) / 2, w, h, nullptr, nullptr, inst,
                                 nullptr);
     if (!hwnd) return 1;
+
+    // theme the titlebar like the window: exact caption color on windows 11,
+    // immersive dark as the fallback on windows 10 (raw attribute numbers so
+    // this builds against older sdks too)
+    BOOL darkOn = TRUE;
+    COLORREF chrome = RGB(0x0A, 0x0A, 0x0A);
+    DwmSetWindowAttribute(hwnd, 35 /* DWMWA_CAPTION_COLOR */, &chrome, sizeof(chrome));
+    DwmSetWindowAttribute(hwnd, 34 /* DWMWA_BORDER_COLOR */, &chrome, sizeof(chrome));
+    DwmSetWindowAttribute(hwnd, 20 /* DWMWA_USE_IMMERSIVE_DARK_MODE */, &darkOn, sizeof(darkOn));
 
     ShowWindow(hwnd, show);
     UpdateWindow(hwnd);

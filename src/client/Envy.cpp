@@ -145,11 +145,11 @@ DWORD __stdcall startThreadImpl(HINSTANCE dll) {
 #endif
 
 #if defined(ENVY_NIGHTLY)
-    Logger::Info("Envy Client [NIGHTLY] {}", Envy::version);
+    Logger::Info("Envy Client [NIGHTLY]");
 #elif defined(ENVY_DEBUG)
-    Logger::Info("Envy Client [DEBUG] {}", Envy::version);
+    Logger::Info("Envy Client [DEBUG]");
 #else
-    Logger::Info("Envy Client {}", Envy::version);
+    Logger::Info("Envy Client");
 #endif
 
     char path[MAX_PATH] {};
