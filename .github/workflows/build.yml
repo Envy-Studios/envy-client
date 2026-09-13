@@ -71,20 +71,31 @@ jobs:
       - name: Build
         run: cmake --build out/build/x64-release --parallel
 
-      - name: Verify DLL exists
+      - name: Verify build outputs
         shell: pwsh
         run: |
           if (-not (Test-Path "out/build/x64-release/Envy.dll")) {
             Get-ChildItem -Recurse out/build/x64-release -Filter *.dll | Format-Table FullName
             throw "Envy.dll was not produced"
           }
-          Get-Item "out/build/x64-release/Envy.dll" | Format-List Name, Length
+          if (-not (Test-Path "out/build/x64-release/Envy.exe")) {
+            Get-ChildItem -Recurse out/build/x64-release -Filter *.exe | Format-Table FullName
+            throw "Envy.exe (launcher) was not produced"
+          }
+          Get-Item "out/build/x64-release/Envy.dll", "out/build/x64-release/Envy.exe" | Format-List Name, Length
 
-      - name: Upload artifact
+      - name: Upload artifact (client dll)
         uses: actions/upload-artifact@v4
         with:
           name: Envy-dll
           path: out/build/x64-release/Envy.dll
+          if-no-files-found: error
+
+      - name: Upload artifact (launcher)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Envy-launcher
+          path: out/build/x64-release/Envy.exe
           if-no-files-found: error
 
       - name: Create release
@@ -105,7 +116,7 @@ jobs:
             throw "Version '$tag' does not look like v1.2.3"
           }
           $title = "Envy Client $tag"
-          $dll = "out/build/x64-release/Envy.dll"
+          $asset = "out/build/x64-release/Envy.exe"
           $sha = "${{ github.sha }}"
 
           # --- does this release already exist? ---
@@ -152,18 +163,18 @@ jobs:
 
           # --- publish ---
           if ($exists) {
-            gh release upload $tag $dll --clobber
+            gh release upload $tag $asset --clobber
             gh release edit $tag --title $title --notes-file notes.md
             if ($env:PRERELEASE -ne "true") { gh release edit $tag --latest }
-            # keep the tag on the build that shipped so the source zip matches the dll
+            # keep the tag on the build that shipped so the source zip matches the exe
             git tag -f $tag $sha
             git push -f origin $tag
             Write-Host "Updated existing release $tag"
           } else {
             if ($env:PRERELEASE -eq "true") {
-              gh release create $tag $dll --title $title --notes-file notes.md --target $sha --prerelease
+              gh release create $tag $asset --title $title --notes-file notes.md --target $sha --prerelease
             } else {
-              gh release create $tag $dll --title $title --notes-file notes.md --target $sha
+              gh release create $tag $asset --title $title --notes-file notes.md --target $sha
             }
             Write-Host "Created release $tag"
           }

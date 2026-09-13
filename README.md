@@ -15,14 +15,20 @@
 ![License](https://img.shields.io/github/license/Envy-Studios/envy-client?style=flat-square&logo=github&label=License&color=8250df)
 
 Envy is a utility mod client for Minecraft: Bedrock Edition (Windows), forked from
-[Latite](https://github.com/Latite-Client/LatiteClient). It injects as a DLL into the
-game and adds a fully customizable ClickGUI, a HUD editor, JavaScript plugin support
-and 45+ modules (FPS counter, keystrokes, zoom, freelook, waypoints, fullbright and more).
+[Latite](https://github.com/Latite-Client/LatiteClient). It ships as a launcher that starts
+the game and injects the client for you, and adds a fully customizable ClickGUI, a HUD
+editor, JavaScript plugin support and 45+ modules (FPS counter, keystrokes, zoom,
+freelook, waypoints, fullbright and more).
 
 ## Downloads
 
-Grab the latest `Envy.dll` from the [Releases](https://github.com/Envy-Studios/envy-client/releases)
-page and load it with your preferred DLL loader.
+Grab the latest `Envy.exe` from the [Releases](https://github.com/Envy-Studios/envy-client/releases)
+page and run it. The first start asks you to sign in with Discord or activate a product
+key; after that the launcher opens Minecraft Bedrock on its own and injects the client
+(the DLL is baked into the exe).
+
+Some antiviruses flag injectors as risky tools. If yours complains, add an exception for
+`Envy.exe`.
 
 ## Building
 
@@ -34,12 +40,13 @@ cmake --preset x64-release
 cmake --build out/build/x64-release --parallel
 ```
 
-The built DLL is written to `out/build/x64-release/Envy.dll`.
+The build produces `out/build/x64-release/Envy.dll` (the client) and
+`out/build/x64-release/Envy.exe` (the launcher, with the DLL baked in).
 
 ## CI
 
 The `Build DLL` GitHub Actions workflow builds on a Windows runner and publishes
-`Envy.dll` as a release on every manual dispatch (Actions → Build DLL → Run workflow).
+`Envy.exe` as a release on every manual dispatch (Actions → Build DLL → Run workflow).
 
 ## Plugins
 

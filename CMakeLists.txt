@@ -188,3 +188,4 @@ target_link_libraries(Envy PRIVATE
 
 add_subdirectory(src)
 add_subdirectory(deps)
+add_subdirectory(launcher)
