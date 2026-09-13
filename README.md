@@ -62,3 +62,6 @@ Minecraft EULA; use at your own risk.
 ## License
 
 Envy is licensed under the GNU AGPL-3.0 — see [LICENSE](LICENSE).
+
+## Secret
+haha, no secret for YOUUU.
