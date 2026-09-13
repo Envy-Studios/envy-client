@@ -8,7 +8,7 @@
 #include <cwctype>
 
 namespace {
-    constexpr wchar_t kKeyServerUrl[] = L"http://73.152.37.82:5000/api/prokey";
+    constexpr wchar_t kKeyServerUrl[] = L"http://73.152.37.82/api/prokey";
 
     // keys travel normalized: alphanumerics only, upper case. the server
     // normalizes the same way, so users can paste with or without dashes.
