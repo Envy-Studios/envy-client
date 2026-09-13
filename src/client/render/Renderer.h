@@ -12,6 +12,7 @@ public:
     ~Renderer();
 
     bool init(IDXGISwapChain* chain);
+    void ensureBoundTo(IDXGISwapChain* chain);
     bool hasInitialized() const noexcept { return hasInit.load(std::memory_order_acquire); };
     HRESULT reinit();
     void shutdownForEject();
@@ -37,6 +38,7 @@ private:
     std::wstring fontFamily = L"Segoe UI";
     std::wstring fontFamily2 = L"Segoe UI";
     void releaseAllResources(bool flush, bool indep = true, bool dispatchCleanup = true);
+    void rebindSwapChain(IDXGISwapChain* chain);
 
     void createTextFormats();
     void releaseTextFormats();
@@ -52,6 +54,8 @@ private:
 
     IDXGISwapChain* gameSwapChain = nullptr;
     IDXGISwapChain4* swapChain4 = nullptr;
+    IDXGISwapChain* foreignChain = nullptr;
+    std::uint32_t foreignPresents = 0;
 
     ComPtr<IDXGIDevice> dxgiDevice;
 
@@ -148,6 +152,7 @@ public:
     void setFontFamily2(std::wstring const& f2) { fontFamily2 = f2; }
 
     [[nodiscard]] D2D1_SIZE_F getScreenSize() {
+        if (!d2dCtx) return { 0.f, 0.f };
         return { (float)d2dCtx->GetPixelSize().width, (float)d2dCtx->GetPixelSize().height };
     }
 

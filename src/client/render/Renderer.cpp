@@ -6,6 +6,8 @@
 #include "client/event/events/RendererInitEvent.h"
 #include "client/Envy.h"
 
+#include "mc/common/client/game/GameCore.h"
+
 namespace {
     const char* commandQueueTypeName(D3D12_COMMAND_LIST_TYPE type) noexcept {
         switch (type) {
@@ -96,6 +98,60 @@ void Renderer::setCommandQueue(ID3D12CommandQueue* queue) {
 
     commandQueue = queue;
     lastFailedCommandQueue = nullptr;
+}
+
+void Renderer::rebindSwapChain(IDXGISwapChain* chain) {
+    if (!chain) return;
+
+    DXGI_SWAP_CHAIN_DESC desc {};
+    if (SUCCEEDED(chain->GetDesc(&desc))) {
+        Logger::Info("rebinding the overlay to swap chain {}x{} (window 0x{:X})", desc.BufferDesc.Width,
+                     desc.BufferDesc.Height, reinterpret_cast<uintptr_t>(desc.OutputWindow));
+    } else {
+        Logger::Info("rebinding the overlay to a new swap chain");
+    }
+
+    lastFailedCommandQueue = nullptr;
+    releaseAllResources(true, false, true);
+    hasInit.store(false, std::memory_order_release);
+    foreignChain = nullptr;
+    foreignPresents = 0;
+
+    init(chain);
+}
+
+void Renderer::ensureBoundTo(IDXGISwapChain* chain) {
+    if (!chain || chain == gameSwapChain) {
+        foreignChain = nullptr;
+        foreignPresents = 0;
+        return;
+    }
+
+    DXGI_SWAP_CHAIN_DESC desc {};
+    const bool hasDesc = SUCCEEDED(chain->GetDesc(&desc));
+
+    // a chain presenting into the game's own window is always the right target,
+    // no matter which chain got bound first
+    if (hasDesc && desc.OutputWindow) {
+        if (auto* gameCore = SDK::GameCore::get()) {
+            if (desc.OutputWindow == gameCore->hwnd) {
+                rebindSwapChain(chain);
+                return;
+            }
+        }
+    }
+
+    // a chain we know nothing about: only follow it once it clearly took over presenting
+    if (chain != foreignChain) {
+        foreignChain = chain;
+        foreignPresents = 0;
+        return;
+    }
+
+    if (++foreignPresents == 8) {
+        Logger::Info("a second swap chain took over presenting, following it");
+        rebindSwapChain(chain);
+    }
 }
 
 bool Renderer::init(IDXGISwapChain* chain) {
@@ -361,6 +417,13 @@ bool Renderer::init(IDXGISwapChain* chain) {
                                        D2D1::BitmapProperties1(D2D1_BITMAP_OPTIONS_TARGET, pixelFormat), &bmp));
     this->blurBuffers[0] = bmp;
     this->hasCopiedBitmap = true;
+
+    DXGI_SWAP_CHAIN_DESC boundDesc {};
+    if (SUCCEEDED(chain->GetDesc(&boundDesc))) {
+        Logger::Info("overlay initialized on {}, {}x{} (window 0x{:X})", isDX11 ? "DX11" : "DX12",
+                     boundDesc.BufferDesc.Width, boundDesc.BufferDesc.Height,
+                     reinterpret_cast<uintptr_t>(boundDesc.OutputWindow));
+    }
 
     hasInit.store(true, std::memory_order_release);
     firstInit = true;

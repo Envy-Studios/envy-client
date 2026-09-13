@@ -85,6 +85,9 @@ HRESULT __stdcall DXHooks::SwapChain_Present(IDXGISwapChain* chain, UINT SyncInt
         auto lock = renderer.lock();
         if (!renderer.isResizeInProgress()) {
             if (renderer.hasInitialized()) {
+                // if another swap chain started presenting (loading screen, recreated chain),
+                // follow it so the overlay never draws into buffers nobody shows
+                renderer.ensureBoundTo(chain);
                 renderer.render();
             } else {
                 renderer.init(chain);
