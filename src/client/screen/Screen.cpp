@@ -87,7 +87,7 @@ void Screen::onRenderOverlay(Event& ev) {
 
     if (isActive() && this->tooltip.has_value()) {
         auto now = std::chrono::system_clock::now();
-        if (now - lastTooltipChange >= 500ms) {
+        if (now - lastTooltipChange >= 500ms && SDK::ClientInstance::get()) {
             D2DUtil dc;
             Vec2& mousePos = SDK::ClientInstance::get()->cursorPos;
             d2d::Rect textRect =

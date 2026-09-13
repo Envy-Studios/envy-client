@@ -1,5 +1,7 @@
 #pragma once
 
+#include <chrono>
+
 #include "../Screen.h"
 
 // the sign in gate. shows up right after injection and stays on top of the
@@ -11,6 +13,7 @@ public:
 
     void onRender(Event& ev);
     void onKey(Event& ev);
+    void onUpdate(Event& ev);
 
     std::string getName() override { return "DiscordLogin"; }
     bool canCloseByUser() override { return false; }
@@ -24,4 +27,7 @@ private:
     float fade = 0.f;
     float dotTimer = 0.f;
     bool finishedLoading = false;
+
+    std::chrono::steady_clock::time_point activatedAt{};
+    bool warnedNoRenderer = false;
 };

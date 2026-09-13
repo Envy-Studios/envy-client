@@ -7,6 +7,7 @@
 #include "client/event/Eventing.h"
 #include "client/event/events/RenderOverlayEvent.h"
 #include "client/event/events/KeyUpdateEvent.h"
+#include "client/event/events/UpdateEvent.h"
 #include "util/Logger.h"
 #include "client/localization/LocalizeString.h"
 #include "client/render/Renderer.h"
@@ -19,11 +20,14 @@ using FontSelection = Renderer::FontSelection;
 DiscordLogin::DiscordLogin() {
     Eventing::get().listen<RenderOverlayEvent>(this, (EventListenerFunc)&DiscordLogin::onRender, 1, true);
     Eventing::get().listen<KeyUpdateEvent>(this, (EventListenerFunc)&DiscordLogin::onKey, 1);
+    Eventing::get().listen<UpdateEvent>(this, (EventListenerFunc)&DiscordLogin::onUpdate, 0);
 }
 
 void DiscordLogin::onEnable(bool ignoreAnims) {
     fade = 0.f;
     finishedLoading = false;
+    activatedAt = std::chrono::steady_clock::now();
+    warnedNoRenderer = false;
     DiscordAuth::get().startRestore();
     Logger::Info("waiting for discord sign in");
 }
@@ -35,8 +39,21 @@ void DiscordLogin::onDisable() {
 void DiscordLogin::onKey(Event& evGeneric) {
     auto& ev = reinterpret_cast<KeyUpdateEvent&>(evGeneric);
     if (ev.getKey() == VK_F11) return;
+    // while the overlay can't draw we must not hard-lock the game either
+    if (!Envy::getRenderer().hasInitialized()) return;
     // the game gets no keys until the sign in went through
     ev.setCancelled(true);
+}
+
+void DiscordLogin::onUpdate(Event&) {
+    if (!isActive() || warnedNoRenderer) return;
+    if (Envy::getRenderer().hasInitialized()) return;
+
+    // the gate is up but nothing can draw it - say so once so logs tell us why
+    if (std::chrono::steady_clock::now() - activatedAt >= std::chrono::seconds(15)) {
+        warnedNoRenderer = true;
+        Logger::Warn("overlay still not initialized after 15s - the sign in screen cannot draw");
+    }
 }
 
 void DiscordLogin::onRender(Event&) {
@@ -57,7 +74,8 @@ void DiscordLogin::onRender(Event&) {
     D2DUtil dc;
     dc.ctx->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
 
-    Vec2 const& cursorPos = SDK::ClientInstance::get()->cursorPos;
+    Vec2 cursorPos{};
+    if (auto* client = SDK::ClientInstance::get()) cursorPos = client->cursorPos;
 
     // blur + dim the game behind the sign in
     if (Envy::get().getMenuBlur()) dc.drawGaussianBlur(Envy::get().getMenuBlur().value() * fade);

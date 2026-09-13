@@ -14,7 +14,7 @@ ScreenManager::ScreenManager() {
 
 void ScreenManager::activateScreen(Screen& screen, bool ignoreAnims) {
     if (this->activeScreen && &this->activeScreen->get() == &screen) {
-        SDK::ClientInstance::get()->releaseCursor();
+        if (auto* client = SDK::ClientInstance::get()) client->releaseCursor();
         return;
     }
 
@@ -24,7 +24,7 @@ void ScreenManager::activateScreen(Screen& screen, bool ignoreAnims) {
 
     this->activeScreen = screen;
     screen.setActive(true, ignoreAnims);
-    SDK::ClientInstance::get()->releaseCursor();
+    if (auto* client = SDK::ClientInstance::get()) client->releaseCursor();
 }
 
 void ScreenManager::exitCurrentScreen() {
@@ -32,7 +32,7 @@ void ScreenManager::exitCurrentScreen() {
         this->activeScreen->get().resetInputState();
         this->activeScreen->get().setActive(false);
         this->activeScreen = std::nullopt;
-        SDK::ClientInstance::get()->grabCursor();
+        if (auto* client = SDK::ClientInstance::get()) client->grabCursor();
     }
 }
 
