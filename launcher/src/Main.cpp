@@ -12,6 +12,14 @@
 
 namespace {
 
+    // some sdk windows headers are missing these edit-margin constants
+    #ifndef EM_SETMARGIN
+    #define EM_SETMARGIN 0x00D3
+    #endif
+    #ifndef EC_LEFTMARGIN
+    #define EC_LEFTMARGIN 0x0001
+    #endif
+
     constexpr int IDC_DISCORD = 101;
     constexpr int IDC_KEYEDIT = 102;
     constexpr int IDC_ACTIVATE = 103;
