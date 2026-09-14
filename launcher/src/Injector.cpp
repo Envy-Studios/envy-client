@@ -99,26 +99,6 @@ namespace {
         return false;
     }
 
-    bool RivaTunerRunning() {
-        HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-        if (snap == INVALID_HANDLE_VALUE) return false;
-
-        PROCESSENTRY32W pe{};
-        pe.dwSize = sizeof(pe);
-        bool found = false;
-        if (Process32FirstW(snap, &pe)) {
-            do {
-                if (_wcsicmp(pe.szExeFile, L"RTSS.exe") == 0 ||
-                    _wcsicmp(pe.szExeFile, L"MSIAfterburner.exe") == 0) {
-                    found = true;
-                    break;
-                }
-            } while (!found && Process32NextW(snap, &pe));
-        }
-        CloseHandle(snap);
-        return found;
-    }
-
     void EnableDebugPrivilege() {
         HANDLE token = nullptr;
         if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &token)) return;
@@ -218,6 +198,26 @@ namespace {
         return true;
     }
 } // namespace
+
+bool RivaTunerRunning() {
+    HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (snap == INVALID_HANDLE_VALUE) return false;
+
+    PROCESSENTRY32W pe{};
+    pe.dwSize = sizeof(pe);
+    bool found = false;
+    if (Process32FirstW(snap, &pe)) {
+        do {
+            if (_wcsicmp(pe.szExeFile, L"RTSS.exe") == 0 ||
+                _wcsicmp(pe.szExeFile, L"MSIAfterburner.exe") == 0) {
+                found = true;
+                break;
+            }
+        } while (!found && Process32NextW(snap, &pe));
+    }
+    CloseHandle(snap);
+    return found;
+}
 
 LaunchOutcome ExtractAndInject(std::function<void(std::wstring const&)> const& status) {
     LaunchOutcome outcome;
