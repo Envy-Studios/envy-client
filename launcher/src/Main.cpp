@@ -38,6 +38,7 @@ namespace {
         HFONT captionFont = nullptr;
         HFONT btnFont = nullptr;
         HFONT statusFont = nullptr;
+        HFONT keyFont = nullptr;
     };
 
     Ui g;
@@ -72,10 +73,13 @@ namespace {
         g.statusFont = CreateFontW(-S(13), 0, 0, 0, FW_NORMAL, 0, 0, 0, DEFAULT_CHARSET,
                                    OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
                                    DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI");
+        g.keyFont = CreateFontW(-S(16), 0, 0, 0, FW_NORMAL, 0, 0, 0, DEFAULT_CHARSET,
+                                OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+                                DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI");
     }
 
     void DestroyUiFonts() {
-        for (HFONT f : {g.wordFont, g.subFont, g.captionFont, g.btnFont, g.statusFont}) {
+        for (HFONT f : {g.wordFont, g.subFont, g.captionFont, g.btnFont, g.statusFont, g.keyFont}) {
             if (f) DeleteObject(f);
         }
     }
@@ -83,6 +87,13 @@ namespace {
     HWND MakeButton(HWND parent, HINSTANCE inst, wchar_t const* text, int id) {
         return CreateWindowExW(0, L"BUTTON", text, WS_CHILD | WS_VISIBLE | BS_OWNERDRAW | WS_TABSTOP,
                                0, 0, 10, 10, parent, (HMENU)(INT_PTR)id, inst, nullptr);
+    }
+
+    // the drawn field the key edit lives in; shared by paint, layout and clicks
+    RECT KeyFieldRect(HWND hwnd) {
+        RECT rc{};
+        GetClientRect(hwnd, &rc);
+        return {S(28), S(216), rc.right - S(28), S(216) + S(34)};
     }
 
     void ApplyLayout(HWND hwnd) {
@@ -99,7 +110,13 @@ namespace {
 
         if (login) {
             SetWindowPos(g.discordBtn, nullptr, S(28), S(104), w - S(56), S(46), SWP_NOZORDER);
-            SetWindowPos(g.keyEdit, nullptr, S(28), S(216), w - S(56), S(34), SWP_NOZORDER);
+            // the edit is sized to hug its text and centered inside the drawn
+            // field, so the value sits in the middle of the box instead of at
+            // the top (single-line edits top-align whatever height they get)
+            RECT field = KeyFieldRect(hwnd);
+            int editH = S(26);
+            SetWindowPos(g.keyEdit, nullptr, field.left, field.top + (S(34) - editH) / 2,
+                         field.right - field.left, editH, SWP_NOZORDER);
             SetWindowPos(g.activateBtn, nullptr, S(28), S(262), w - S(56), S(42), SWP_NOZORDER);
         } else if (g.panel == PanelAuthed) {
             SetWindowPos(g.launchBtn, nullptr, S(28), S(180), w - S(56), S(46), SWP_NOZORDER);
@@ -161,8 +178,13 @@ namespace {
             RECT capRect{S(28), S(194), w - S(28), S(212)};
             DrawTextW(dc, L"PRODUCT KEY", -1, &capRect, DT_LEFT | DT_SINGLELINE);
 
-            // frame around the key field; lights up in the accent when focused
-            RECT frame{S(28) - 1, S(216) - 1, w - S(28) + 1, S(216) + S(34) + 1};
+            // field behind the key edit, frame lights up in the accent when focused
+            RECT field = KeyFieldRect(hwnd);
+            HBRUSH fieldBrush = CreateSolidBrush(RGB(0x17, 0x17, 0x17));
+            FillRect(dc, &field, fieldBrush);
+            DeleteObject(fieldBrush);
+
+            RECT frame{field.left - 1, field.top - 1, field.right + 1, field.bottom + 1};
             COLORREF frameCol = g_keyFocused ? RGB(0x65, 0x6C, 0xA9) : RGB(0x33, 0x33, 0x33);
             HBRUSH frameBrush = CreateSolidBrush(frameCol);
             FrameRect(dc, &frame, frameBrush);
@@ -294,6 +316,8 @@ namespace {
                                         WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_AUTOHSCROLL, 0, 0,
                                         10, 10, hwnd, (HMENU)(INT_PTR)IDC_KEYEDIT, inst, nullptr);
             SendMessageW(g.keyEdit, EM_SETLIMITTEXT, 64, 0);
+            SendMessageW(g.keyEdit, WM_SETFONT, (WPARAM)g.keyFont, TRUE);
+            SendMessageW(g.keyEdit, EM_SETMARGIN, EC_LEFTMARGIN, MAKELPARAM(S(10), 0));
             g.activateBtn = MakeButton(hwnd, inst, L"Activate", IDC_ACTIVATE);
             g.launchBtn = MakeButton(hwnd, inst, L"Launch Minecraft", IDC_LAUNCH);
 
@@ -312,6 +336,15 @@ namespace {
         case WM_PAINT:
             Paint(hwnd);
             return 0;
+
+        case WM_LBUTTONDOWN:
+            // clicks on the padding around the key edit should focus it too
+            if (g.panel == PanelLogin && g.showLoginControls) {
+                RECT field = KeyFieldRect(hwnd);
+                POINT pt{(short)LOWORD(lp), (short)HIWORD(lp)};
+                if (PtInRect(&field, pt)) SetFocus(g.keyEdit);
+            }
+            break;
 
         case WM_DRAWITEM:
             DrawButton((DRAWITEMSTRUCT*)lp);
@@ -398,14 +431,23 @@ namespace {
             return 0;
         }
 
-        case WM_ENVY_LAUNCH_OK:
+        case WM_ENVY_LAUNCH_OK: {
+            std::wstring note;
+            if (lp) TakeString((LPVOID)lp, note);
             g.busy = false;
-            g.statusColor = 1;
-            g.statusText = L"Envy loaded. Have fun.";
             EnableWindow(g.launchBtn, TRUE);
+            if (note.empty()) {
+                g.statusColor = 1;
+                g.statusText = L"Envy loaded. Have fun.";
+                SetTimer(hwnd, 1, 3000, nullptr);
+            } else {
+                // a caveat came back with the launch, keep the window up so it is read
+                g.statusColor = 2;
+                g.statusText = note;
+            }
             InvalidateRect(hwnd, nullptr, TRUE);
-            SetTimer(hwnd, 1, 3000, nullptr);
             return 0;
+        }
 
         case WM_ENVY_LAUNCH_FAIL: {
             std::wstring error;

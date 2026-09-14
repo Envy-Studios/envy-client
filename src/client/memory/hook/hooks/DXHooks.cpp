@@ -2,6 +2,7 @@
 #include "client/Envy.h"
 #include "client/render/Renderer.h"
 #include "pch.h"
+#include <tlhelp32.h>
 
 namespace {
     typedef HRESULT(WINAPI* CreateSwapChainForHWND_t)(IDXGIFactory2*, IUnknown*, HWND, const DXGI_SWAP_CHAIN_DESC1*,
@@ -16,6 +17,32 @@ namespace {
     std::shared_ptr<Hook> ExecuteCommandListsHook;
 
     constexpr UINT TearingPresentFlag = static_cast<UINT>(DXGI_PRESENT_ALLOW_TEARING);
+
+    // rivaTuner (the engine behind MSI Afterburner's overlay) detours the
+    // very same directx functions this client byte-patches; when both hook
+    // the same prologue the present chain breaks and nothing renders at
+    // all. if it is around, stay unhooked so the game renders like vanilla.
+    bool rivaTunerPresent() {
+        if (GetModuleHandleW(L"RTSSHooks64.dll") || GetModuleHandleW(L"RTSSHooks.dll"))
+            return true;
+
+        HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        if (snap == INVALID_HANDLE_VALUE) return false;
+        PROCESSENTRY32W pe{};
+        pe.dwSize = sizeof(pe);
+        bool found = false;
+        if (Process32FirstW(snap, &pe)) {
+            do {
+                if (_wcsicmp(pe.szExeFile, L"RTSS.exe") == 0 ||
+                    _wcsicmp(pe.szExeFile, L"MSIAfterburner.exe") == 0) {
+                    found = true;
+                    break;
+                }
+            } while (!found && Process32NextW(snap, &pe));
+        }
+        CloseHandle(snap);
+        return found;
+    }
 
     bool isFlipModel(DXGI_SWAP_EFFECT swapEffect) {
         return swapEffect == DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL || swapEffect == DXGI_SWAP_EFFECT_FLIP_DISCARD;
@@ -166,6 +193,12 @@ HRESULT __stdcall DXHooks::CommandQueue_ExecuteCommandLists(ID3D12CommandQueue* 
 
 DXHooks::DXHooks()
     : HookGroup("DirectX") {
+    if (rivaTunerPresent()) {
+        Logger::Warn("MSI Afterburner/RivaTuner detected - staying unhooked so the game "
+                     "keeps rendering. Close it and relaunch to play with the client.");
+        return;
+    }
+
     ComPtr<IDXGIFactory> factory;
     ComPtr<IDXGISwapChain> swapChain;
     ComPtr<IDXGIAdapter> adapter;

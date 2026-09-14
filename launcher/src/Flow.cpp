@@ -70,9 +70,19 @@ void flow::StartKeyCheck(HWND hwnd, std::wstring key) {
 
 void flow::StartLaunch(HWND hwnd) {
     std::thread([hwnd] {
+        bool afterburner = RivaTunerRunning();
         LaunchOutcome out = ExtractAndInject([hwnd](std::wstring const& s) { PostStatus(hwnd, s); });
         if (out.ok) {
-            PostMessageW(hwnd, WM_ENVY_LAUNCH_OK, 0, 0);
+            if (afterburner) {
+                // the client steps aside when rivaTuner is running (their hooks
+                // fight over the same directx functions); pass the note along
+                // with the ok so the window stays up and it gets read
+                PostText(hwnd, WM_ENVY_LAUNCH_OK,
+                         L"Loaded, but MSI Afterburner/RivaTuner is running, so the client sat "
+                         L"this one out. Close it and launch again for the full client.");
+            } else {
+                PostMessageW(hwnd, WM_ENVY_LAUNCH_OK, 0, 0);
+            }
         } else {
             PostText(hwnd, WM_ENVY_LAUNCH_FAIL, std::move(out.error));
         }

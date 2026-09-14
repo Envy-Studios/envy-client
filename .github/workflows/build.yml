@@ -35,7 +35,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # Full history + tags so the release notes can list commits since the last tag
+          # Full history so the release step can force-move the tag onto the built commit
           fetch-depth: 0
 
       - name: Setup MSVC (x64)
@@ -137,24 +137,6 @@ jobs:
             $lines.Add("")
           }
 
-          $prevTag = git describe --tags --abbrev=0 2>$null
-          if ($LASTEXITCODE -ne 0) { $prevTag = $null }
-          # the tag is already in history (overwrite rebuild); fall back to the tag before it
-          if ($prevTag -eq $tag) {
-            $prevTag = git describe --tags --abbrev=0 "$tag^" 2>$null
-            if ($LASTEXITCODE -ne 0) { $prevTag = $null }
-          }
-
-          if ($prevTag) {
-            $lines.Add("### Commits since $prevTag")
-            $lines.Add("")
-            git log --oneline --no-decorate -30 "$prevTag..HEAD" | ForEach-Object { $lines.Add("- $_") }
-          } else {
-            $lines.Add("### Commits")
-            $lines.Add("")
-            git log --oneline --no-decorate -30 HEAD | ForEach-Object { $lines.Add("- $_") }
-          }
-
           $lines.Add("")
           $lines.Add("---")
           $lines.Add("**Build:** MSVC x64 Release @ [$($sha.Substring(0,7))](https://github.com/Envy-Studios/envy-client/commit/$sha)")
@@ -164,7 +146,8 @@ jobs:
           # --- publish ---
           if ($exists) {
             gh release upload $tag $asset --clobber
-            gh release edit $tag --title $title --notes-file notes.md
+            # no --title here: an overwrite keeps the title the release already has
+            gh release edit $tag --notes-file notes.md
             if ($env:PRERELEASE -ne "true") { gh release edit $tag --latest }
             # keep the tag on the build that shipped so the source zip matches the exe
             git tag -f $tag $sha

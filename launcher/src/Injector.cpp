@@ -70,6 +70,55 @@ namespace {
         }
     }
 
+    struct WindowSeeker {
+        DWORD pid = 0;
+        HWND window = nullptr;
+    };
+
+    BOOL CALLBACK FindMainWindowProc(HWND hwnd, LPARAM lp) {
+        auto* seek = (WindowSeeker*)lp;
+        DWORD pid = 0;
+        GetWindowThreadProcessId(hwnd, &pid);
+        if (pid != seek->pid || !IsWindowVisible(hwnd)) return TRUE;
+        wchar_t title[64]{};
+        GetWindowTextW(hwnd, title, 64);
+        if (!title[0]) return TRUE;
+        seek->window = hwnd;
+        return FALSE;
+    }
+
+    // polls until the process owns a visible titled window, which means it is
+    // past the fragile early boot where injecting would deadlock it
+    bool WaitForGameWindow(DWORD pid) {
+        for (int i = 0; i < 120; i++) {
+            WindowSeeker seek{pid, nullptr};
+            EnumWindows(FindMainWindowProc, (LPARAM)&seek);
+            if (seek.window) return true;
+            Sleep(500);
+        }
+        return false;
+    }
+
+    bool RivaTunerRunning() {
+        HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        if (snap == INVALID_HANDLE_VALUE) return false;
+
+        PROCESSENTRY32W pe{};
+        pe.dwSize = sizeof(pe);
+        bool found = false;
+        if (Process32FirstW(snap, &pe)) {
+            do {
+                if (_wcsicmp(pe.szExeFile, L"RTSS.exe") == 0 ||
+                    _wcsicmp(pe.szExeFile, L"MSIAfterburner.exe") == 0) {
+                    found = true;
+                    break;
+                }
+            } while (!found && Process32NextW(snap, &pe));
+        }
+        CloseHandle(snap);
+        return found;
+    }
+
     void EnableDebugPrivilege() {
         HANDLE token = nullptr;
         if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &token)) return;
@@ -199,6 +248,12 @@ LaunchOutcome ExtractAndInject(std::function<void(std::wstring const&)> const& s
             return outcome;
         }
     }
+
+    // going in while the game is still booting deadlocks it on the loader
+    // lock, so hold off until its window is up and boot has settled a little
+    status(L"Waiting for Minecraft to come up...");
+    bool ready = WaitForGameWindow(pid);
+    Sleep(ready ? 3000 : 5000);
 
     status(L"Injecting Envy...");
     if (!Inject(pid, dllPath, outcome.error)) {
