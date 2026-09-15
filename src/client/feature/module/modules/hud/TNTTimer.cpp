@@ -6,6 +6,9 @@
 #include "client/event/events/RenderLayerEvent.h"
 #include "client/event/events/LeaveGameEvent.h"
 #include "util/WorldToScreen.h"
+#include "mc/common/client/game/FontRepository.h"
+#include "mc/common/client/gui/controls/UIControl.h"
+#include "mc/common/client/gui/controls/VisualTree.h"
 
 TNTTimer::TNTTimer()
     : Module("TNTTimer", LocalizeString::get("client.hudmodule.tntTimer.name"),
