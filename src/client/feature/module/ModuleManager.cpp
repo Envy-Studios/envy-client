@@ -55,6 +55,13 @@
 #include "modules/hud/MovableCoordinates.h"
 #include "modules/hud/FrameTimeDisplay.h"
 #include "modules/hud/WAILA.h"
+#include "modules/hud/PotionHUD.h"
+#include "modules/hud/TotemCounter.h"
+#include "modules/hud/TNTTimer.h"
+#include "modules/hud/DeathLogger.h"
+#include "modules/hud/EntityCounter.h"
+#include "modules/hud/DirectionHUD.h"
+#include "modules/hud/ExperienceInfo.h"
 
 #include "client/event/events/KeyUpdateEvent.h"
 
@@ -112,6 +119,13 @@ ModuleManager::ModuleManager() {
     this->items.push_back(std::make_shared<BlockGame>());
     this->items.push_back(std::make_shared<SkinStealer>());
     this->items.push_back(std::make_shared<KillNotification>());
+    this->items.push_back(std::make_shared<PotionHUD>());
+    this->items.push_back(std::make_shared<TotemCounter>());
+    this->items.push_back(std::make_shared<TNTTimer>());
+    this->items.push_back(std::make_shared<DeathLogger>());
+    this->items.push_back(std::make_shared<EntityCounter>());
+    this->items.push_back(std::make_shared<DirectionHUD>());
+    this->items.push_back(std::make_shared<ExperienceInfo>());
 
     for (auto& mod : items) {
         mod->onInit();
