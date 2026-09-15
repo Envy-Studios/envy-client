@@ -17,11 +17,11 @@ namespace {
 
     constexpr float levelMinMax = 20000.f; // player.level caps at 24791
 
-    bool looksLikeLevel(SDK::AttributeInstance const* inst) {
+    bool looksLikeLevel(SDK::AttributeInstance* inst) {
         return inst && inst->maxValue >= levelMinMax;
     }
 
-    bool looksLikeProgress(SDK::AttributeInstance const* inst) {
+    bool looksLikeProgress(SDK::AttributeInstance* inst) {
         return inst && inst->maxValue > 0.f && inst->maxValue <= 1.001f;
     }
 
