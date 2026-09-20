@@ -9,7 +9,6 @@ public:
     Assets(Assets&) = delete;
     Assets(Assets&&) = delete;
 
-    Asset envyLogo;
     Asset searchIcon;
     Asset arrowIcon;
     Asset xIcon;
@@ -17,7 +16,6 @@ public:
     Asset arrowBackIcon;
     Asset cogIcon;
     Asset checkmarkIcon;
-    Asset logoWhite;
     Asset document;
 
     void loadAll();

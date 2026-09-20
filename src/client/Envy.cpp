@@ -681,7 +681,7 @@ void Envy::initSettings() {
                                              LocalizeString::get("client.settings.menuKey.desc"));
         set->value = &this->menuKey;
         set->callback = [this](Setting& set) {
-            Envy::getScreenManager().get<HUDEditor>().key = this->getMenuKey();
+            Envy::getScreenManager().get<ClickGUI>().key = this->getMenuKey();
         };
         this->getSettings().addSetting(set);
     }

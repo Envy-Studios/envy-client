@@ -8,8 +8,6 @@ LOAD_RESOURCE(checkmark_png);
 LOAD_RESOURCE(cog_png);
 LOAD_RESOURCE(document_png);
 LOAD_RESOURCE(hudedit_png);
-LOAD_RESOURCE(envylogowhite_png);
-LOAD_RESOURCE(envylogo_png);
 LOAD_RESOURCE(searchicon_png);
 LOAD_RESOURCE(x_png);
 LOAD_RESOURCE(document_png);

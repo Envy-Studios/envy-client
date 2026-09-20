@@ -6,19 +6,16 @@
 #include "../../resource/InitResources.h"
 
 Assets::Assets()
-    : envyLogo(GET_RESOURCE(envylogo_png))
-    , searchIcon(GET_RESOURCE(searchicon_png))
+    : searchIcon(GET_RESOURCE(searchicon_png))
     , arrowIcon(GET_RESOURCE(arrow_png))
     , xIcon(GET_RESOURCE(x_png))
     , hudEditIcon(GET_RESOURCE(hudedit_png))
     , arrowBackIcon(GET_RESOURCE(arrow_back_png))
     , cogIcon(GET_RESOURCE(cog_png))
     , checkmarkIcon(GET_RESOURCE(checkmark_png))
-    , logoWhite(GET_RESOURCE(envylogowhite_png))
     , document(GET_RESOURCE(document_png))
 
 {
-    allAssets.push_back(&this->envyLogo);
     allAssets.push_back(&this->searchIcon);
     allAssets.push_back(&this->arrowIcon);
     allAssets.push_back(&this->xIcon);
@@ -26,7 +23,6 @@ Assets::Assets()
     allAssets.push_back(&this->arrowBackIcon);
     allAssets.push_back(&this->cogIcon);
     allAssets.push_back(&this->checkmarkIcon);
-    allAssets.push_back(&this->logoWhite);
     allAssets.push_back(&this->document);
 }
 

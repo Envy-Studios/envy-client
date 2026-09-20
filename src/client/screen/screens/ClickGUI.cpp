@@ -86,6 +86,8 @@ namespace {
 }
 
 ClickGUI::ClickGUI() {
+    this->key = Envy::get().getMenuKey();
+
     Envy::get().addTextBox(&this->searchTextBox);
 
     Eventing::get().listen<RenderOverlayEvent>(this, (EventListenerFunc)&ClickGUI::onRender, 1, true);
@@ -244,38 +246,6 @@ void ClickGUI::onRender(Event&) {
     float imgSize = 0.05338f * rect.getWidth();
 
     RectF logoRect = d2d::rectFromStart(rect, offX, rect.top + offY, imgSize, imgSize, rtl);
-
-    // Envy Logo + text
-    {
-        {
-            auto bmp = Envy::getAssets().envyLogo.getBitmap();
-
-            D2D1::Matrix3x2F oMat;
-            auto sz = Envy::getRenderer().getScreenSize();
-
-            D2D1::Matrix3x2F m;
-
-            // dc.ctx->GetTransform(&m);
-            // dc.ctx->SetTransform(D2D1::Matrix3x2F::Scale(41.f / sz.width, 41.f / sz.height) *
-            // D2D1::Matrix3x2F::Translation(logoRect.left, logoRect.top) * m);
-            dc.ctx->DrawBitmap(bmp, logoRect, 1.f);
-            // dc.ctx->DrawImage(compositeEffect.Get(), { 0.f, 0.f });
-            // dc.ctx->SetTransform(m);
-        }
-
-        // Envy Text
-        float realLogoHeight = rect.getHeight() * 0.077921f;
-        float titleSize = 25.f * adaptedScale;
-        std::wstring titleText = L"\x202A" L"Envy Client\x202C";
-        float titleGap = 9.f * adaptedScale;
-        float titleWidth = 500.f * adaptedScale;
-        RectF titleRect = rtl ? RectF { logoRect.left - titleGap - titleWidth, logoRect.top, logoRect.left - titleGap,
-                                        logoRect.top + realLogoHeight }
-                              : RectF { logoRect.right + titleGap, logoRect.top, logoRect.right + titleGap + titleWidth,
-                                        logoRect.top + realLogoHeight };
-        dc.drawText(titleRect, titleText, d2d::Color(1.f, 1.f, 1.f, 1.f), FontSelection::PrimaryLight, titleSize,
-                    DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_CENTER, false);
-    }
 
     // X button / other menus
     {
