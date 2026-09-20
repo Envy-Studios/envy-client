@@ -1,0 +1,152 @@
+name: Build DLL
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version, e.g. v0.1.0 (bump it every release)'
+        required: true
+        default: 'v0.1.0'
+        type: string
+      notes:
+        description: 'What got added in this release (shown at the top of the release notes)'
+        required: false
+        default: ''
+        type: string
+      prerelease:
+        description: 'Mark the release as a pre-release'
+        required: false
+        default: false
+        type: boolean
+      overwrite:
+        description: 'If this version already exists, update that release instead of failing'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Full history so the release step can force-move the tag onto the built commit
+          fetch-depth: 0
+
+      - name: Setup MSVC (x64)
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      # The CMake embedded-assets step invokes `ld.exe -r -b binary`.
+      # That ld comes from MinGW, so make sure it is on PATH.
+      - name: Ensure MinGW ld.exe on PATH
+        shell: pwsh
+        run: |
+          $candidates = @(
+            "C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin",
+            "C:\ProgramData\mingw64\mingw64\bin",
+            "C:\mingw64\bin"
+          ) | Where-Object { Test-Path (Join-Path $_ "ld.exe") }
+
+          if (-not $candidates) {
+            Write-Host "ld.exe not found, installing MinGW via Chocolatey..."
+            choco install mingw -y --no-progress
+            $candidates = @("C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin")
+          }
+
+          $ld = Join-Path ($candidates | Select-Object -First 1) "ld.exe"
+          Write-Host "Using ld.exe: $ld"
+          & $ld --version | Select-Object -First 1
+          Add-Content $env:GITHUB_PATH ($candidates | Select-Object -First 1)
+
+      - name: Configure (x64 Release preset)
+        run: cmake --preset x64-release
+
+      - name: Build
+        run: cmake --build out/build/x64-release --parallel
+
+      - name: Verify build outputs
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "out/build/x64-release/Envy.dll")) {
+            Get-ChildItem -Recurse out/build/x64-release -Filter *.dll | Format-Table FullName
+            throw "Envy.dll was not produced"
+          }
+          Get-Item "out/build/x64-release/Envy.dll" | Format-List Name, Length
+
+      - name: Upload artifact (client dll)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Envy-dll
+          path: out/build/x64-release/Envy.dll
+          if-no-files-found: error
+
+      - name: Create release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+          NOTES: ${{ inputs.notes }}
+          PRERELEASE: ${{ inputs.prerelease }}
+          OVERWRITE: ${{ inputs.overwrite }}
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          # --- normalize the version into a vX.Y.Z tag ---
+          $tag = $env:VERSION.Trim()
+          if (-not $tag.StartsWith("v")) { $tag = "v$tag" }
+          if ($tag -notmatch '^v\d+\.\d+\.\d+(-[\w.\-]+)?$') {
+            throw "Version '$tag' does not look like v1.2.3"
+          }
+          $title = "Envy Client $tag"
+          $asset = "out/build/x64-release/Envy.dll"
+          $sha = "${{ github.sha }}"
+
+          # --- does this release already exist? ---
+          $exists = $false
+          gh release view $tag 2>$null | Out-Null
+          if ($LASTEXITCODE -eq 0) { $exists = $true }
+          if ($exists -and $env:OVERWRITE -ne "true") {
+            throw "Release $tag already exists. Bump the version, or tick 'overwrite' to replace it."
+          }
+
+          # --- assemble release notes ---
+          $lines = [System.Collections.Generic.List[string]]::new()
+
+          $manual = $env:NOTES.Trim()
+          if ($manual) {
+            $lines.Add("## What's new")
+            $lines.Add($manual)
+            $lines.Add("")
+          }
+
+          $lines.Add("")
+          $lines.Add("---")
+          $lines.Add("**Build:** MSVC x64 Release @ [$($sha.Substring(0,7))](https://github.com/Envy-Studios/envy-client/commit/$sha)")
+
+          Set-Content -Path notes.md -Value $lines -Encoding utf8
+
+          # --- publish ---
+          if ($exists) {
+            gh release upload $tag $asset --clobber
+            # no --title here: an overwrite keeps the title the release already has
+            gh release edit $tag --notes-file notes.md
+            if ($env:PRERELEASE -ne "true") { gh release edit $tag --latest }
+            # keep the tag on the build that shipped so the source zip matches the dll
+            git tag -f $tag $sha
+            git push -f origin $tag
+            Write-Host "Updated existing release $tag"
+          } else {
+            if ($env:PRERELEASE -eq "true") {
+              gh release create $tag $asset --title $title --notes-file notes.md --target $sha --prerelease
+            } else {
+              gh release create $tag $asset --title $title --notes-file notes.md --target $sha
+            }
+            Write-Host "Created release $tag"
+          }
