@@ -10,6 +10,7 @@ class Aimbot : public Module {
 public:
     Aimbot();
 
+    void onTurnDelta(Event& event);
     void onCameraUpdate(Event& event);
     void onTick(Event& event);
     void onClick(Event& event);
@@ -31,7 +32,7 @@ private:
     void resetTargeting();
     void fullReset();
     std::optional<Vec2> aimStep(float dtMs);
-    void reportState(const char* reason, bool toast);
+    void reportState(const char* reason);
 
     EnumData mode;              // 0 = Legit, 1 = Blatant
     EnumData priority;          // 0 = closest to crosshair, 1 = closest distance, 2 = lowest health
@@ -49,8 +50,10 @@ private:
     bool reacting = false;
     std::chrono::steady_clock::time_point reactionDeadline {};
 
+    bool turnDriverSeen = false;
     bool cameraDriverSeen = false;
     bool fallbackLogged = false;
+    std::chrono::steady_clock::time_point lastTurnDelta {};
     std::chrono::steady_clock::time_point lastCameraEvent {};
     const char* lastState = "";
 };

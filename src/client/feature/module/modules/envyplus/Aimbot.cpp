@@ -3,10 +3,9 @@
 #include "client/event/events/TickEvent.h"
 #include "client/event/events/ClickEvent.h"
 #include "client/event/events/FocusLostEvent.h"
+#include "client/event/events/TurnDeltaEvent.h"
 #include "client/event/events/UpdatePlayerCameraEvent.h"
 #include "client/localization/LocalizeString.h"
-#include "client/Envy.h"
-#include "client/misc/Notifications.h"
 #include "mc/common/client/game/ClientInstance.h"
 #include "mc/common/client/player/LocalPlayer.h"
 #include "mc/common/world/Minecraft.h"
@@ -14,7 +13,6 @@
 #include "mc/common/world/actor/player/Player.h"
 #include "util/Crypto.h"
 #include "util/Logger.h"
-#include "util/Util.h"
 
 #include <algorithm>
 #include <array>
@@ -41,10 +39,6 @@ namespace {
     float millisSince(Clock::time_point tp) {
         return static_cast<float>(
             std::chrono::duration<double, std::milli>(Clock::now() - tp).count());
-    }
-
-    void notify(const char* text) {
-        Envy::getNotifications().push(util::StrToWStr(text));
     }
 }
 
@@ -91,13 +85,13 @@ Aimbot::Aimbot()
     addSetting("playersOnly", LocalizeString::get("client.module.aimbot.playersOnly.name"),
                LocalizeString::get("client.module.aimbot.playersOnly.desc"), this->playersOnly);
 
-    // Per-frame camera driver: the first-person view is recomputed every frame
-    // by UpdatePlayerFromCameraSystem from its own look state, so overriding
-    // the actor rotation component alone cannot move the camera. Setting view
-    // angles here feeds our rotation into that same pipeline (this is how
-    // Freelook controls the camera).
+    // Primary driver: inject aim as turn deltas through the game's own
+    // look-controls (LocalPlayer::applyTurnDelta). A delta moves the real
+    // camera and the player rotation together - the same path the mouse and
+    // the Gyro module use.
+    listen<TurnDeltaEvent>(static_cast<EventListenerFunc>(&Aimbot::onTurnDelta));
+    // Fallbacks for game versions where the turn-delta hook does not fire.
     listen<UpdatePlayerCameraEvent>(static_cast<EventListenerFunc>(&Aimbot::onCameraUpdate));
-    // Fallback for game versions where the camera hook does not fire.
     listen<TickEvent>(static_cast<EventListenerFunc>(&Aimbot::onTick));
     listen<ClickEvent>(static_cast<EventListenerFunc>(&Aimbot::onClick));
     listen<FocusLostEvent>(static_cast<EventListenerFunc>(&Aimbot::onFocusLost));
@@ -122,12 +116,11 @@ void Aimbot::resetTargeting() {
     reacting = false;
 }
 
-void Aimbot::reportState(const char* reason, bool toast) {
+void Aimbot::reportState(const char* reason) {
     if (lastState == reason) return;
     lastState = reason;
     if (reason && *reason) {
         Logger::Info("[Aimbot] {}", reason);
-        if (toast) notify(reason);
     }
 }
 
@@ -215,12 +208,46 @@ Aimbot::Target Aimbot::findTarget(SDK::Player* self, SDK::Level* level) {
     return best;
 }
 
+void Aimbot::onTurnDelta(Event& evGeneric) {
+    auto& ev = reinterpret_cast<TurnDeltaEvent&>(evGeneric);
+
+    if (!turnDriverSeen) {
+        turnDriverSeen = true;
+        Logger::Info("[Aimbot] turn delta driver active");
+    }
+
+    const float dtMs = std::clamp(millisSince(lastTurnDelta), 1.f, 100.f);
+    lastTurnDelta = Clock::now();
+
+    const auto aim = aimStep(dtMs);
+    if (!aim) return;
+
+    auto* plr = SDK::ClientInstance::get()->getLocalPlayer();
+    if (!plr) return;
+
+    // Aim by adding a turn delta on the game's own look-controls path: the
+    // game applies it to the camera view and the player rotation together,
+    // so what you see and where hits go stay in sync. While aiming we also
+    // cancel this frame's mouse delta, otherwise the mouse would overshoot
+    // the exact lock (Blatant) or the smoothing step (Legit).
+    const Vec2 rot = plr->getRot();
+    Vec2 delta;
+    delta.x = wrapDegrees(aim->x - rot.x) - ev.getDelta().x;
+    delta.y = (aim->y - rot.y) - ev.getDelta().y;
+    ev.setDelta(delta);
+}
+
 void Aimbot::onCameraUpdate(Event& evGeneric) {
     auto& ev = reinterpret_cast<UpdatePlayerCameraEvent&>(evGeneric);
 
+    // The turn-delta driver owns aiming while it is alive.
+    if (turnDriverSeen && millisSince(lastTurnDelta) < 250.f) return;
+
     if (!cameraDriverSeen) {
         cameraDriverSeen = true;
-        Logger::Info("[Aimbot] camera driver active");
+        if (turnDriverSeen) {
+            Logger::Warn("[Aimbot] turn delta driver silent, using camera override fallback (view may not move)");
+        }
     }
 
     const float dtMs = std::clamp(millisSince(lastCameraEvent), 1.f, 100.f);
@@ -241,14 +268,14 @@ void Aimbot::onCameraUpdate(Event& evGeneric) {
 }
 
 void Aimbot::onTick(Event&) {
-    // The per-frame camera driver owns aiming while it is alive. This path
-    // only runs when no camera events arrive (e.g. the UpdatePlayerFromCamera
-    // signature did not resolve on this game version).
-    if (cameraDriverSeen && millisSince(lastCameraEvent) < 250.f) return;
+    // Last-resort fallback: no turn delta and no camera events arrived.
+    const bool turnFresh = turnDriverSeen && millisSince(lastTurnDelta) < 250.f;
+    const bool cameraFresh = cameraDriverSeen && millisSince(lastCameraEvent) < 250.f;
+    if (turnFresh || cameraFresh) return;
 
     if (!fallbackLogged) {
         fallbackLogged = true;
-        Logger::Warn("[Aimbot] camera driver silent, using per-tick fallback (aiming may not move the view)");
+        Logger::Warn("[Aimbot] no turn delta or camera driver, using per-tick fallback (view may not move)");
     }
 
     if (const auto aim = aimStep(50.f)) {
@@ -264,44 +291,44 @@ std::optional<Vec2> Aimbot::aimStep(float dtMs) {
     auto* ci = SDK::ClientInstance::get();
     if (!ci || !ci->minecraftGame || !ci->minecraftGame->isCursorGrabbed()) {
         resetTargeting();
-        reportState("waiting: not in gameplay (cursor not grabbed)", false);
+        reportState("waiting: not in gameplay (cursor not grabbed)");
         return std::nullopt;
     }
 
     auto* plr = ci->getLocalPlayer();
     if (!plr || !plr->actorRotation) {
         resetTargeting();
-        reportState("waiting: no local player", false);
+        reportState("waiting: no local player");
         return std::nullopt;
     }
 
     SDK::Level* level = ci->minecraft ? ci->minecraft->getLevel() : nullptr;
     if (!level) {
         resetTargeting();
-        reportState("waiting: no level loaded", false);
+        reportState("waiting: no level loaded");
         return std::nullopt;
     }
 
     if (std::get<BoolValue>(weaponOnly) && !isHoldingWeapon(plr)) {
         resetTargeting();
-        reportState("waiting for a weapon (weapon only is on)", true);
+        reportState("waiting for a weapon (weapon only is on)");
         return std::nullopt;
     }
 
     if (std::get<BoolValue>(onlyOnAttack) && !attackDown) {
         resetTargeting();
-        reportState("waiting for attack (only while attacking is on)", true);
+        reportState("waiting for attack (only while attacking is on)");
         return std::nullopt;
     }
 
     const Target target = findTarget(plr, level);
     if (!target.actor) {
         resetTargeting();
-        reportState("searching: no target inside range/FOV", false);
+        reportState("searching: no target inside range/FOV");
         return std::nullopt;
     }
 
-    reportState("", false);
+    reportState("");
 
     // Human reactions (Legit): freshly acquired targets get a small randomized
     // delay before the aim starts moving, so it doesn't snap the instant an
