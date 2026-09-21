@@ -483,6 +483,7 @@ void ClickGUI::onRender(Event&) {
                 { "client.ui.clickGui.tab.all.name", ALL, searchCol, 0.f },
                 { "client.ui.clickGui.tab.game.name", GAME, searchCol, 0.f },
                 { "client.ui.clickGui.tab.hud.name", HUD, searchCol, 0.f },
+                { "client.ui.clickGui.tab.envyPlus.name", ENVYPLUS, searchCol, 0.f },
                 { "client.ui.clickGui.tab.plugins.name", SCRIPT, searchCol, 0.f }
             };
 
@@ -583,9 +584,13 @@ void ClickGUI::onRender(Event&) {
                 if (modTab == ALL) {
                     if (!mod.mod) continue;
                 } else if (modTab == GAME) {
-                    if (!mod.mod || mod.mod->getCategory() == Module::HUD) continue;
+                    if (!mod.mod || mod.mod->getCategory() == Module::HUD ||
+                        mod.mod->getCategory() == Module::ENVYPLUS)
+                        continue;
                 } else if (modTab == HUD) {
                     if (!mod.mod || !mod.mod->isHud()) continue;
+                } else if (modTab == ENVYPLUS) {
+                    if (!mod.mod || mod.mod->getCategory() != Module::ENVYPLUS) continue;
                 } else if (modTab == SCRIPT) {
                     if (!mod.isMarketScript) continue;
                 }
