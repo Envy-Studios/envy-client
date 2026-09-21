@@ -147,7 +147,7 @@ Aimbot::Target Aimbot::findTarget(SDK::Player* self, SDK::Level* level) {
         if (!health || *health <= 0.f) continue;
         if (actor->isInvisible()) continue;
 
-        const AABB box = actor->getBoundingBox();
+        AABB box = actor->getBoundingBox();
         const Vec3 center = box.getCenter();
 
         const float dist = eye.distance(center);
@@ -247,8 +247,8 @@ void Aimbot::onTick(Event& evGeneric) {
         newPitch = targetPitch;
     } else {
         // Legit: exponential smoothing towards the target, X/Y axes tuned separately
-        const float sx = std::clamp(std::get<FloatValue>(xSens), 1.f, 100.f) / 100.f;
-        const float sy = std::clamp(std::get<FloatValue>(ySens), 1.f, 100.f) / 100.f;
+        const float sx = std::clamp(float(std::get<FloatValue>(xSens)), 1.f, 100.f) / 100.f;
+        const float sy = std::clamp(float(std::get<FloatValue>(ySens)), 1.f, 100.f) / 100.f;
         newYaw = rot.x + wrapDegrees(targetYaw - rot.x) * sx;
         newPitch = rot.y + (targetPitch - rot.y) * sy;
     }
