@@ -3,10 +3,14 @@
 #include "../../Module.h"
 #include "util/LMath.h"
 
+#include <chrono>
+#include <optional>
+
 class Aimbot : public Module {
 public:
     Aimbot();
 
+    void onCameraUpdate(Event& event);
     void onTick(Event& event);
     void onClick(Event& event);
     void onFocusLost(Event& event);
@@ -25,6 +29,9 @@ private:
     bool isHoldingWeapon(SDK::Player* player);
     Target findTarget(SDK::Player* player, SDK::Level* level);
     void resetTargeting();
+    void fullReset();
+    std::optional<Vec2> aimStep(float dtMs);
+    void reportState(const char* reason, bool toast);
 
     EnumData mode;              // 0 = Legit, 1 = Blatant
     EnumData priority;          // 0 = closest to crosshair, 1 = closest distance, 2 = lowest health
@@ -38,6 +45,12 @@ private:
     ValueType playersOnly = BoolValue(true);
 
     bool attackDown = false;
-    float reactionTimer = 0.f;
     uint64_t targetRuntimeId = 0;
+    bool reacting = false;
+    std::chrono::steady_clock::time_point reactionDeadline {};
+
+    bool cameraDriverSeen = false;
+    bool fallbackLogged = false;
+    std::chrono::steady_clock::time_point lastCameraEvent {};
+    const char* lastState = "";
 };

@@ -3,19 +3,29 @@
 #include "client/event/events/TickEvent.h"
 #include "client/event/events/ClickEvent.h"
 #include "client/event/events/FocusLostEvent.h"
+#include "client/event/events/UpdatePlayerCameraEvent.h"
 #include "client/localization/LocalizeString.h"
+#include "client/Envy.h"
+#include "client/misc/Notifications.h"
 #include "mc/common/client/game/ClientInstance.h"
 #include "mc/common/client/player/LocalPlayer.h"
+#include "mc/common/world/Minecraft.h"
 #include "mc/common/world/level/Level.h"
 #include "mc/common/world/actor/player/Player.h"
 #include "util/Crypto.h"
+#include "util/Logger.h"
+#include "util/Util.h"
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
+#include <optional>
 #include <random>
 
 namespace {
+    using Clock = std::chrono::steady_clock;
+
     float wrapDegrees(float a) {
         a = std::fmod(a + 180.f, 360.f);
         if (a < 0.f) a += 360.f;
@@ -26,6 +36,15 @@ namespace {
         static std::mt19937 rng{std::random_device{}()};
         std::uniform_real_distribution<float> dist(low, high);
         return dist(rng);
+    }
+
+    float millisSince(Clock::time_point tp) {
+        return static_cast<float>(
+            std::chrono::duration<double, std::milli>(Clock::now() - tp).count());
+    }
+
+    void notify(const char* text) {
+        Envy::getNotifications().push(util::StrToWStr(text));
     }
 }
 
@@ -72,23 +91,44 @@ Aimbot::Aimbot()
     addSetting("playersOnly", LocalizeString::get("client.module.aimbot.playersOnly.name"),
                LocalizeString::get("client.module.aimbot.playersOnly.desc"), this->playersOnly);
 
+    // Per-frame camera driver: the first-person view is recomputed every frame
+    // by UpdatePlayerFromCameraSystem from its own look state, so overriding
+    // the actor rotation component alone cannot move the camera. Setting view
+    // angles here feeds our rotation into that same pipeline (this is how
+    // Freelook controls the camera).
+    listen<UpdatePlayerCameraEvent>(static_cast<EventListenerFunc>(&Aimbot::onCameraUpdate));
+    // Fallback for game versions where the camera hook does not fire.
     listen<TickEvent>(static_cast<EventListenerFunc>(&Aimbot::onTick));
     listen<ClickEvent>(static_cast<EventListenerFunc>(&Aimbot::onClick));
     listen<FocusLostEvent>(static_cast<EventListenerFunc>(&Aimbot::onFocusLost));
 }
 
 void Aimbot::onEnable() {
-    resetTargeting();
+    fullReset();
 }
 
 void Aimbot::onDisable() {
+    fullReset();
+}
+
+void Aimbot::fullReset() {
+    attackDown = false;
     resetTargeting();
+    lastState = "";
 }
 
 void Aimbot::resetTargeting() {
-    attackDown = false;
-    reactionTimer = 0.f;
     targetRuntimeId = 0;
+    reacting = false;
+}
+
+void Aimbot::reportState(const char* reason, bool toast) {
+    if (lastState == reason) return;
+    lastState = reason;
+    if (reason && *reason) {
+        Logger::Info("[Aimbot] {}", reason);
+        if (toast) notify(reason);
+    }
 }
 
 void Aimbot::onClick(Event& evGeneric) {
@@ -114,8 +154,8 @@ bool Aimbot::isHoldingWeapon(SDK::Player* player) {
     static constexpr std::array<uint64_t, 16> weapons = {
         "wooden_sword"_fnv64,   "stone_sword"_fnv64,  "iron_sword"_fnv64,  "golden_sword"_fnv64,
         "diamond_sword"_fnv64,  "netherite_sword"_fnv64, "wooden_axe"_fnv64,  "stone_axe"_fnv64,
-        "iron_axe"_fnv64,       "golden_axe"_fnv64,   "diamond_axe"_fnv64, "netherite_axe"_fnv64,
-        "bow"_fnv64,            "crossbow"_fnv64,     "trident"_fnv64,     "mace"_fnv64,
+        "iron_axe"_fnv64,       "golden_axe"_fnv64,   "diamond_axe"_fnv64,  "netherite_axe"_fnv64,
+        "bow"_fnv64,            "crossbow"_fnv64,     "trident"_fnv64,      "mace"_fnv64,
     };
 
     const uint64_t idHash = static_cast<uint64_t>(item->id.hash);
@@ -175,36 +215,93 @@ Aimbot::Target Aimbot::findTarget(SDK::Player* self, SDK::Level* level) {
     return best;
 }
 
-void Aimbot::onTick(Event& evGeneric) {
-    auto& ev = reinterpret_cast<TickEvent&>(evGeneric);
+void Aimbot::onCameraUpdate(Event& evGeneric) {
+    auto& ev = reinterpret_cast<UpdatePlayerCameraEvent&>(evGeneric);
 
+    if (!cameraDriverSeen) {
+        cameraDriverSeen = true;
+        Logger::Info("[Aimbot] camera driver active");
+    }
+
+    const float dtMs = std::clamp(millisSince(lastCameraEvent), 1.f, 100.f);
+    lastCameraEvent = Clock::now();
+
+    const auto aim = aimStep(dtMs);
+    if (!aim) return;
+
+    ev.setViewAngles(*aim);
+
+    // Keep the actor rotation component in sync with the camera override so
+    // the server and the target math see the same rotation the player sees.
+    auto* plr = SDK::ClientInstance::get()->getLocalPlayer();
+    if (plr && plr->actorRotation) {
+        plr->actorRotation->rotationOld = plr->actorRotation->rotation;
+        plr->getRot() = *aim;
+    }
+}
+
+void Aimbot::onTick(Event&) {
+    // The per-frame camera driver owns aiming while it is alive. This path
+    // only runs when no camera events arrive (e.g. the UpdatePlayerFromCamera
+    // signature did not resolve on this game version).
+    if (cameraDriverSeen && millisSince(lastCameraEvent) < 250.f) return;
+
+    if (!fallbackLogged) {
+        fallbackLogged = true;
+        Logger::Warn("[Aimbot] camera driver silent, using per-tick fallback (aiming may not move the view)");
+    }
+
+    if (const auto aim = aimStep(50.f)) {
+        auto* plr = SDK::ClientInstance::get()->getLocalPlayer();
+        if (plr && plr->actorRotation) {
+            plr->actorRotation->rotationOld = plr->actorRotation->rotation;
+            plr->getRot() = *aim;
+        }
+    }
+}
+
+std::optional<Vec2> Aimbot::aimStep(float dtMs) {
     auto* ci = SDK::ClientInstance::get();
     if (!ci || !ci->minecraftGame || !ci->minecraftGame->isCursorGrabbed()) {
         resetTargeting();
-        return;
+        reportState("waiting: not in gameplay (cursor not grabbed)", false);
+        return std::nullopt;
     }
 
     auto* plr = ci->getLocalPlayer();
-    if (!plr || !plr->actorRotation || !ev.getLevel()) {
+    if (!plr || !plr->actorRotation) {
         resetTargeting();
-        return;
+        reportState("waiting: no local player", false);
+        return std::nullopt;
+    }
+
+    SDK::Level* level = ci->minecraft ? ci->minecraft->getLevel() : nullptr;
+    if (!level) {
+        resetTargeting();
+        reportState("waiting: no level loaded", false);
+        return std::nullopt;
     }
 
     if (std::get<BoolValue>(weaponOnly) && !isHoldingWeapon(plr)) {
         resetTargeting();
-        return;
+        reportState("waiting for a weapon (weapon only is on)", true);
+        return std::nullopt;
     }
 
     if (std::get<BoolValue>(onlyOnAttack) && !attackDown) {
         resetTargeting();
-        return;
+        reportState("waiting for attack (only while attacking is on)", true);
+        return std::nullopt;
     }
 
-    Target target = findTarget(plr, ev.getLevel());
+    const Target target = findTarget(plr, level);
     if (!target.actor) {
         resetTargeting();
-        return;
+        reportState("searching: no target inside range/FOV", false);
+        return std::nullopt;
     }
+
+    reportState("", false);
 
     // Human reactions (Legit): freshly acquired targets get a small randomized
     // delay before the aim starts moving, so it doesn't snap the instant an
@@ -212,17 +309,20 @@ void Aimbot::onTick(Event& evGeneric) {
     const uint64_t id = target.actor->getRuntimeID();
     if (id != targetRuntimeId) {
         targetRuntimeId = id;
+        Logger::Info("[Aimbot] target acquired at {:.1f} m", target.distance);
         if (mode.getSelectedKey() == 0) {
             const float delay = std::get<FloatValue>(reactionDelay);
-            reactionTimer = delay * randomFactor(0.8f, 1.2f);
+            reactionDeadline = Clock::now() + std::chrono::milliseconds(
+                static_cast<long long>(delay * randomFactor(0.8f, 1.2f)));
+            reacting = true;
         } else {
-            reactionTimer = 0.f;
+            reacting = false;
         }
     }
 
-    if (reactionTimer > 0.f) {
-        reactionTimer -= 50.f; // one client tick
-        return;
+    if (reacting) {
+        if (Clock::now() < reactionDeadline) return std::nullopt;
+        reacting = false;
     }
 
     Vec3 eye = plr->getPos();
@@ -230,7 +330,7 @@ void Aimbot::onTick(Event& evGeneric) {
 
     const Vec3 to = target.aimPoint - eye;
     const float horizontal = std::sqrt(to.x * to.x + to.z * to.z);
-    if (horizontal < 0.001f && EnvyMath::abs(to.y) < 0.001f) return;
+    if (horizontal < 0.001f && EnvyMath::abs(to.y) < 0.001f) return std::nullopt;
 
     // Bedrock: rotation.x = yaw (0 = +Z, clockwise), rotation.y = pitch (positive = down)
     const float targetYaw = std::atan2(-to.x, to.z) * (180.f / pi_f);
@@ -246,12 +346,17 @@ void Aimbot::onTick(Event& evGeneric) {
         newYaw = targetYaw;
         newPitch = targetPitch;
     } else {
-        // Legit: exponential smoothing towards the target, X/Y axes tuned separately
+        // Legit: exponential smoothing towards the target, X/Y axes tuned
+        // separately. Slider semantics are "per client tick"; convert to the
+        // real frame time so smoothing feels the same at any FPS.
         const float sx = std::clamp(float(std::get<FloatValue>(xSens)), 1.f, 100.f) / 100.f;
         const float sy = std::clamp(float(std::get<FloatValue>(ySens)), 1.f, 100.f) / 100.f;
-        newYaw = rot.x + wrapDegrees(targetYaw - rot.x) * sx;
-        newPitch = rot.y + (targetPitch - rot.y) * sy;
+        const float steps = std::max(dtMs, 1.f) / 50.f;
+        const float fx = 1.f - std::pow(1.f - sx, steps);
+        const float fy = 1.f - std::pow(1.f - sy, steps);
+        newYaw = rot.x + wrapDegrees(targetYaw - rot.x) * fx;
+        newPitch = rot.y + (targetPitch - rot.y) * fy;
     }
 
-    plr->getRot() = Vec2{wrapDegrees(newYaw), newPitch};
+    return Vec2{wrapDegrees(newYaw), newPitch};
 }
