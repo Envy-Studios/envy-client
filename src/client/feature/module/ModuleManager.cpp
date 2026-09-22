@@ -23,8 +23,6 @@
 #include "modules/game/KillNotification.h"
 #include "modules/game/Gyro.h"
 
-#include "modules/envyplus/Aimbot.h"
-
 #include "modules/visual/Fullbright.h"
 #include "modules/visual/MotionBlur.h"
 #include "modules/visual/HurtColor.h"
@@ -116,7 +114,6 @@ ModuleManager::ModuleManager() {
     this->items.push_back(std::make_shared<BlockGame>());
     this->items.push_back(std::make_shared<SkinStealer>());
     this->items.push_back(std::make_shared<KillNotification>());
-    this->items.push_back(std::make_shared<Aimbot>());
 
     for (auto& mod : items) {
         mod->onInit();

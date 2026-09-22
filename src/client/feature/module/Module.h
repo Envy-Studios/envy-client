@@ -14,8 +14,7 @@ public:
         GAME,
         HUD,
         GAMEHUD,
-        SCRIPT,
-        ENVYPLUS
+        SCRIPT
     };
 
     inline static constexpr int nokeybind = 1;

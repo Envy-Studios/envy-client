@@ -87,7 +87,6 @@ private:
         ALL = 0,
         GAME,
         HUD,
-        ENVYPLUS,
         SCRIPT
     } modTab = ALL;
 
