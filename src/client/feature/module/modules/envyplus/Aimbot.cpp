@@ -4,6 +4,7 @@
 #include "client/event/events/ClickEvent.h"
 #include "client/event/events/FocusLostEvent.h"
 #include "client/event/events/TurnDeltaEvent.h"
+#include "client/event/events/UpdateEvent.h"
 #include "client/event/events/UpdatePlayerCameraEvent.h"
 #include "client/localization/LocalizeString.h"
 #include "mc/common/client/game/ClientInstance.h"
@@ -88,9 +89,12 @@ Aimbot::Aimbot()
     // Primary driver: inject aim as turn deltas through the game's own
     // look-controls (LocalPlayer::applyTurnDelta). A delta moves the real
     // camera and the player rotation together - the same path the mouse and
-    // the Gyro module use.
+    // the Gyro module use. The delta is packed {x = pitch, y = yaw}.
     listen<TurnDeltaEvent>(static_cast<EventListenerFunc>(&Aimbot::onTurnDelta));
-    // Fallbacks for game versions where the turn-delta hook does not fire.
+    // Keeps the lock alive whenever no look input is arriving (mouse held
+    // still) by feeding the same look-controls a synthetic turn.
+    listen<UpdateEvent>(static_cast<EventListenerFunc>(&Aimbot::onUpdate));
+    // Fallback for game versions where the turn-delta hook does not fire.
     listen<UpdatePlayerCameraEvent>(static_cast<EventListenerFunc>(&Aimbot::onCameraUpdate));
     listen<TickEvent>(static_cast<EventListenerFunc>(&Aimbot::onTick));
     listen<ClickEvent>(static_cast<EventListenerFunc>(&Aimbot::onClick));
@@ -109,11 +113,15 @@ void Aimbot::fullReset() {
     attackDown = false;
     resetTargeting();
     lastState = "";
+    syntheticInject = false;
+    budgetUsed = {};
+    budgetWindow = {};
 }
 
 void Aimbot::resetTargeting() {
     targetRuntimeId = 0;
     reacting = false;
+    pitchPinnedLogged = false;
 }
 
 void Aimbot::reportState(const char* reason) {
@@ -208,8 +216,71 @@ Aimbot::Target Aimbot::findTarget(SDK::Player* self, SDK::Level* level) {
     return best;
 }
 
+bool Aimbot::turnDriverAlive() {
+    if (!turnDriverSeen) return false;
+    return millisSince(lastTurnDelta) < 250.f || millisSince(lastSyntheticTurn) < 250.f;
+}
+
+Vec2 Aimbot::budgetStep(Vec2 step, bool blatant) {
+    if (millisSince(budgetWindow) > 15.f) {
+        budgetWindow = Clock::now();
+        budgetUsed = {};
+    }
+
+    // Rate budget per ~16 ms window, per axis (game order: x = pitch, y = yaw).
+    // Without this, a burst of applyTurnDelta calls in one frame could apply
+    // the correction several times over and drive the view into the clamp.
+    float capX;
+    float capY;
+    if (blatant) {
+        capX = capY = 100.f;
+    } else {
+        const float sens = std::clamp(float(std::get<FloatValue>(xSens)), 1.f, 100.f);
+        capX = capY = 5.f + 0.4f * sens;
+    }
+
+    const float roomX = std::max(capX - std::abs(budgetUsed.x), 0.f);
+    const float roomY = std::max(capY - std::abs(budgetUsed.y), 0.f);
+    step.x = std::clamp(step.x, -roomX, roomX);
+    step.y = std::clamp(step.y, -roomY, roomY);
+    budgetUsed.x += step.x;
+    budgetUsed.y += step.y;
+    return step;
+}
+
+Vec2 Aimbot::aimCorrection(const Vec2& rot, const Vec2& aim, float dtMs, bool blatant) {
+    const float yawErr = wrapDegrees(aim.x - rot.x);
+    const float pitchErr = std::clamp(aim.y - rot.y, -89.9f, 89.9f);
+
+    float gainPitch;
+    float gainYaw;
+    if (blatant) {
+        // Half the remaining error per call: locks within a few frames yet
+        // stays stable even if the game batches look input.
+        gainPitch = gainYaw = 0.5f;
+    } else {
+        // Exponential smoothing, X/Y axes tuned separately. Slider semantics
+        // are "per client tick"; converted to real elapsed time so smoothing
+        // feels the same at any FPS or delta rate.
+        const float sp = std::clamp(float(std::get<FloatValue>(ySens)), 1.f, 100.f) / 100.f;
+        const float sw = std::clamp(float(std::get<FloatValue>(xSens)), 1.f, 100.f) / 100.f;
+        const float steps = std::max(dtMs, 1.f) / 50.f;
+        gainPitch = std::min(1.f - std::pow(1.f - sp, steps), 0.35f);
+        gainYaw = std::min(1.f - std::pow(1.f - sw, steps), 0.35f);
+    }
+
+    return budgetStep(Vec2{pitchErr * gainPitch, yawErr * gainYaw}, blatant);
+}
+
 void Aimbot::onTurnDelta(Event& evGeneric) {
     auto& ev = reinterpret_cast<TurnDeltaEvent&>(evGeneric);
+
+    // Synthetic injections (onUpdate) already carry the exact step we want;
+    // let them pass through untouched.
+    if (syntheticInject) {
+        syntheticInject = false;
+        return;
+    }
 
     if (!turnDriverSeen) {
         turnDriverSeen = true;
@@ -225,29 +296,74 @@ void Aimbot::onTurnDelta(Event& evGeneric) {
     auto* plr = SDK::ClientInstance::get()->getLocalPlayer();
     if (!plr) return;
 
-    // Aim by adding a turn delta on the game's own look-controls path: the
-    // game applies it to the camera view and the player rotation together,
-    // so what you see and where hits go stay in sync. While aiming we also
-    // cancel this frame's mouse delta, otherwise the mouse would overshoot
-    // the exact lock (Blatant) or the smoothing step (Legit).
+    // Aim by steering the game's own look-controls. The delta packing here is
+    // {x = pitch (vertical), y = yaw (horizontal)} - the same packing the Gyro
+    // module and the camera stick use - while the actor rotation we aim with
+    // is {x = yaw, y = pitch}, so the axes cross at this boundary. Feeding
+    // yaw into the pitch axis drives the view straight into the pitch clamp
+    // (staring at the ground).
     const Vec2 rot = plr->getRot();
-    Vec2 delta;
-    delta.x = wrapDegrees(aim->x - rot.x) - ev.getDelta().x;
-    delta.y = (aim->y - rot.y) - ev.getDelta().y;
-    ev.setDelta(delta);
+    const bool blatant = mode.getSelectedKey() == 1;
+    const Vec2 step = aimCorrection(rot, *aim, dtMs, blatant);
+
+    if (blatant) {
+        // Hard lock: while a target is held the crosshair belongs to the
+        // aimbot, so replace this call's look input entirely.
+        ev.setDelta(step);
+    } else {
+        // Legit: keep the player's own look input and glide towards the
+        // target on top of it.
+        const Vec2 d = ev.getDelta();
+        ev.setDelta(Vec2{d.x + step.x, d.y + step.y});
+    }
+}
+
+void Aimbot::onUpdate(Event&) {
+    // Only after a real TurnDeltaEvent proved the applyTurnDelta hook works:
+    // the synthetic call re-enters that hook, and calling through a dead
+    // signature would dereference a null pointer.
+    if (!turnDriverSeen) return;
+    // Natural look input is flowing - onTurnDelta already steers it.
+    if (millisSince(lastTurnDelta) < 50.f) return;
+
+    // The mouse is resting, so the game is not calling applyTurnDelta on its
+    // own. Feed the same look-controls a synthetic turn so Blatant keeps
+    // pinning the crosshair and Legit keeps gliding while the mouse is still.
+    // The direct call passes back through our TurnDeltaEvent handler (the
+    // hook is a detour on the same function), where syntheticInject lets it
+    // through unmodified.
+    syntheticInject = false;
+
+    const auto aim = aimStep(16.f);
+    if (!aim) return;
+
+    auto* plr = SDK::ClientInstance::get()->getLocalPlayer();
+    if (!plr) return;
+
+    const Vec2 rot = plr->getRot();
+    const bool blatant = mode.getSelectedKey() == 1;
+    const Vec2 step = aimCorrection(rot, *aim, 16.f, blatant);
+
+    if (!pitchPinnedLogged && targetRuntimeId != 0 && std::abs(rot.y) > 89.5f) {
+        pitchPinnedLogged = true;
+        Logger::Warn("[Aimbot] view is pinned at the pitch clamp while a target is locked");
+    }
+
+    syntheticInject = true;
+    lastSyntheticTurn = Clock::now();
+    plr->applyTurnDelta(step);
 }
 
 void Aimbot::onCameraUpdate(Event& evGeneric) {
     auto& ev = reinterpret_cast<UpdatePlayerCameraEvent&>(evGeneric);
 
-    // The turn-delta driver owns aiming while it is alive.
-    if (turnDriverSeen && millisSince(lastTurnDelta) < 250.f) return;
+    // The turn-delta driver (natural + synthetic) owns aiming once its hook
+    // has proven alive.
+    if (turnDriverSeen) return;
 
     if (!cameraDriverSeen) {
         cameraDriverSeen = true;
-        if (turnDriverSeen) {
-            Logger::Warn("[Aimbot] turn delta driver silent, using camera override fallback (view may not move)");
-        }
+        Logger::Warn("[Aimbot] turn delta hook silent, using camera override fallback (view may not move)");
     }
 
     const float dtMs = std::clamp(millisSince(lastCameraEvent), 1.f, 100.f);
@@ -268,8 +384,9 @@ void Aimbot::onCameraUpdate(Event& evGeneric) {
 }
 
 void Aimbot::onTick(Event&) {
-    // Last-resort fallback: no turn delta and no camera events arrived.
-    const bool turnFresh = turnDriverSeen && millisSince(lastTurnDelta) < 250.f;
+    // Last-resort fallback: no turn delta (natural or synthetic) and no
+    // camera events arrived.
+    const bool turnFresh = turnDriverAlive();
     const bool cameraFresh = cameraDriverSeen && millisSince(lastCameraEvent) < 250.f;
     if (turnFresh || cameraFresh) return;
 
