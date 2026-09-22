@@ -98,11 +98,11 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
 
-          # --- normalize the version into a vX.Y.Z tag ---
+          # --- normalize the version into a tag (vX.Y or vX.Y.Z; the client version tracks the Minecraft version) ---
           $tag = $env:VERSION.Trim()
           if (-not $tag.StartsWith("v")) { $tag = "v$tag" }
-          if ($tag -notmatch '^v\d+\.\d+\.\d+(-[\w.\-]+)?$') {
-            throw "Version '$tag' does not look like v1.2.3"
+          if ($tag -notmatch '^v\d+\.\d+(\.\d+)?(-[\w.\-]+)?$') {
+            throw "Version '$tag' does not look like v26.51"
           }
           $title = "Envy Client $tag"
           $asset = "out/build/x64-release/Envy.dll"
